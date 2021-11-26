@@ -29,12 +29,12 @@ class SatTerm_Component {
 	public:
 		SatTerm_Component (std::string const& identifier, bool display_messages);
 		virtual ~SatTerm_Component () {}
-		std::string GetMessage(bool capture_end_char, int rx_fifo_index = 0);
-		int SendMessage(std::string message, int tx_fifo_index = 0);
-		int SendBytes(const char* bytes, int byte_count, int tx_fifo_index = 0);
+		std::string GetMessage(bool capture_end_char, size_t rx_fifo_index = 0);
+		int SendMessage(std::string message, size_t tx_fifo_index = 0);
+		int SendBytes(const char* bytes, size_t byte_count, size_t tx_fifo_index = 0);
 		bool IsInitialised(void);
-		int GetTxFifoCount(void);
-		int GetRxFifoCount(void);
+		size_t GetTxFifoCount(void);
+		size_t GetRxFifoCount(void);
 		int GetErrorCode(void);
 
 	protected:
@@ -57,13 +57,13 @@ class SatTerm_Component {
 class SatTerm_Server : public SatTerm_Component {
 	public:
 		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal,
-						bool display_messages = false, int stop_fifo_index = 0, int sc_fifo_count = 1, int cs_fifo_count = 1);
+						bool display_messages = false, size_t stop_fifo_index = 0, size_t sc_fifo_count = 1, size_t cs_fifo_count = 1);
 		~SatTerm_Server();
 		int Stop(void);
 		
 	private:
 		pid_t StartClient(void);
-		bool CreateFifos(int sc_fifo_count, int cs_fifo_count);
+		bool CreateFifos(size_t sc_fifo_count, size_t cs_fifo_count);
 		bool OpenFifos(void);
 		int Finish(void);
 		
@@ -76,7 +76,7 @@ class SatTerm_Server : public SatTerm_Component {
 class SatTerm_Client : public SatTerm_Component {
 	public:
 		SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = false);
-		SatTerm_Client(std::string const& identifier, char end_char, int argv_start_index, char* argv[], bool display_messages = false);
+		SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages = false);
 		void Configure(void);
 		
 	private:

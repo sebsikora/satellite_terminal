@@ -37,7 +37,7 @@
 
 #include "satellite_terminal.h"
 
-SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal, bool display_messages, int stop_fifo_index, int tx_fifo_count, int rx_fifo_count)
+SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count)
  : SatTerm_Component(identifier, display_messages) {
 	m_component_type = "Server";
 	m_path_to_client_binary = path_to_client_binary;
@@ -97,11 +97,11 @@ SatTerm_Server::~SatTerm_Server() {
 	}
 }
 
-bool SatTerm_Server::CreateFifos(int tx_fifo_count, int rx_fifo_count) {
+bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	m_error_code = 0;
 	bool success = true;
 	int status = 0;
-	for (int tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
+	for (size_t tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
 		std::string fifo_path = "./" + m_identifier + "_fifo_sc_" + std::to_string(tx_fifo_index);
 		remove(fifo_path.c_str());	// If temporary file already exists, delete it.
 		m_tx_fifo_paths.emplace_back(fifo_path);
@@ -117,7 +117,7 @@ bool SatTerm_Server::CreateFifos(int tx_fifo_count, int rx_fifo_count) {
 		}
 	}
 	if (success) {
-		for (int rx_fifo_index = 0; rx_fifo_index < rx_fifo_count; rx_fifo_index ++) {
+		for (size_t rx_fifo_index = 0; rx_fifo_index < rx_fifo_count; rx_fifo_index ++) {
 			std::string fifo_path = "./" + m_identifier + "_fifo_cs_" + std::to_string(rx_fifo_index);
 			remove(fifo_path.c_str());	// If temporary file already exists, delete it.
 			m_rx_fifo_paths.emplace_back(fifo_path);
@@ -137,8 +137,7 @@ bool SatTerm_Server::CreateFifos(int tx_fifo_count, int rx_fifo_count) {
 }
 
 pid_t SatTerm_Server::StartClient() {
-	pid_t process;
-    process = fork();
+	pid_t process = fork();
     if (process < 0)
     {
 		m_error_code = errno;

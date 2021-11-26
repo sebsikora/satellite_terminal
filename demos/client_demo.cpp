@@ -8,13 +8,13 @@
 
 int main(int argc, char *argv[]) {
 	
-	int argv_start_index = 1;
+	size_t argv_start_index = 1;
 	SatTerm_Client stc("test_client", '\n', argv_start_index, argv, true);
 
 	if (stc.IsInitialised()) {
 		bool running = true;
 		while (running) {
-			for (int i = 0; i < stc.GetRxFifoCount(); i ++) {
+			for (size_t i = 0; i < stc.GetRxFifoCount(); i ++) {
 				std::string message = stc.GetMessage(false, i);
 				if (message != "") {
 					if ((message == "q") && (i == 0)) {

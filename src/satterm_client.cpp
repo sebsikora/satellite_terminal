@@ -30,6 +30,7 @@
 
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages)
  : SatTerm_Component(identifier, display_messages) {
+	// Create a client by directly specifying rx and tx fifo paths.
 	m_component_type = "Client";
 	m_end_char = end_char;
 	m_rx_fifo_paths = rx_fifo_paths;
@@ -37,8 +38,9 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 	Configure();
 }
 
-SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, int argv_start_index, char* argv[], bool display_messages)
+SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages)
  : SatTerm_Component(identifier, display_messages) {
+	// Construct a client by parsing argv from the stipulated argument index (inclusive).
 	m_component_type = "Client";
 	m_end_char = end_char;
 	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));

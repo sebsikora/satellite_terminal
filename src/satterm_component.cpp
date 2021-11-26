@@ -156,7 +156,7 @@ bool SatTerm_Component::OpenTxFifos() {
 	return success;
 }
 
-std::string SatTerm_Component::GetMessage(bool capture_end_char, int rx_fifo_index) {
+std::string SatTerm_Component::GetMessage(bool capture_end_char, size_t rx_fifo_index) {
 	m_error_code = 0;
 	char char_in;
 	bool end_char_received = false;
@@ -202,15 +202,15 @@ std::string SatTerm_Component::GetMessage(bool capture_end_char, int rx_fifo_ind
 	}
 }
 
-int SatTerm_Component::SendMessage(std::string message, int tx_fifo_index) {
+int SatTerm_Component::SendMessage(std::string message, size_t tx_fifo_index) {
 	std::string msg = message;
 	msg.push_back(m_end_char);
-	int message_length = msg.size();
+	size_t message_length = msg.size();
 	int success = SendBytes(msg.c_str(), message_length, tx_fifo_index);
 	return success;
 }
 
-int SatTerm_Component::SendBytes(const char* bytes, int byte_count, int tx_fifo_index) {
+int SatTerm_Component::SendBytes(const char* bytes, size_t byte_count, size_t tx_fifo_index) {
 	m_error_code = 0;
 	int success = write(m_tx_fifo_descriptors[tx_fifo_index], bytes, byte_count);
 	if (success < 0) {	// Now that we are blocking the SIGPIPE signal, we need to check if any errors are raied
@@ -224,11 +224,11 @@ int SatTerm_Component::SendBytes(const char* bytes, int byte_count, int tx_fifo_
 	return success;
 }
 
-int SatTerm_Component::GetTxFifoCount(void) {
+size_t SatTerm_Component::GetTxFifoCount(void) {
 	return m_tx_fifo_descriptors.size();
 }
 
-int SatTerm_Component::GetRxFifoCount(void) {
+size_t SatTerm_Component::GetRxFifoCount(void) {
 	return m_rx_fifo_descriptors.size();
 }
 

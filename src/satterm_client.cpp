@@ -1,6 +1,6 @@
 /*
 	
-	satellite_terminal - Easily spawn and communicate by-directionally with a client process in a separate terminal emulator instance.
+	satellite_terminal - Easily spawn and communicate bidirectionally with client processes in separate terminal emulator instances.
 	
 	Copyright © 2021 Dr Seb N.F. Sikora.
 	

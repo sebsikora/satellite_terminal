@@ -77,6 +77,7 @@ class SatTerm_Client : public SatTerm_Component {
 	public:
 		SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = false);
 		SatTerm_Client(std::string const& identifier, char end_char, int argv_start_index, char* argv[], bool display_messages = false);
+		void Configure(void);
 		
 	private:
 		bool OpenFifos(void);

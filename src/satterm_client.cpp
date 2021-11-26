@@ -41,20 +41,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
                                  // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
                                  // After each write() call we need to check the return value and if -1 check for the EPIPE error code
                                  // before/if writing again.
-	bool success = OpenFifos();
-	if (success) {
-		if (m_display_messages) {
-			std::string message = "Client " + m_identifier + " initialised successfully.";
-			std::cout << message << std::endl;
-		}
-		m_initialised_successfully = true;
-	} else {
-		if (m_display_messages) {
-			std::string message = "Client " + m_identifier + " unable to open fifo(s).";
-			std::cout << message << std::endl;
-		}
-		m_initialised_successfully = false;
-	}
+	Configure();
 }
 
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, int argv_start_index, char* argv[], bool display_messages)
@@ -74,6 +61,10 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, int
 	for (size_t i = offset + tx_fifo_count; i < offset + tx_fifo_count + rx_fifo_count; i ++) {
 		m_rx_fifo_paths.emplace_back(std::string(argv[i]));
 	}
+	Configure();
+}
+
+void SatTerm_Client::Configure() {
 	bool success = OpenFifos();
 	if (success) {
 		if (m_display_messages) {

@@ -26,8 +26,6 @@
 #include <vector>
 #include <iostream>
 
-#include <signal.h>			// SIGPIPE, SIG_IGN.
-
 #include "satellite_terminal.h"
 
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages)
@@ -36,11 +34,6 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 	m_end_char = end_char;
 	m_rx_fifo_paths = rx_fifo_paths;
 	m_tx_fifo_paths = tx_fifo_paths;
-	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
-		                         // a SIGPIPE signal is generated and this process terminates.
-                                 // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
-                                 // After each write() call we need to check the return value and if -1 check for the EPIPE error code
-                                 // before/if writing again.
 	Configure();
 }
 

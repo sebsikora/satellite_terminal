@@ -45,11 +45,6 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_stop_fifo_index = stop_fifo_index;
 	m_stop_signal = stop_signal;
 	
-	signal(SIGPIPE, SIG_IGN);	// If the reader at the other end of the fifo closes prematurely, when we try and write() to the fifo
-								// a SIGPIPE signal is generated and this process terminates.
-								// We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
-								// After each write() call we need to check the return value and if -1 check for the EPIPE error code before/if writing again.
-	
 	bool success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {

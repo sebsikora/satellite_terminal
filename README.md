@@ -34,6 +34,6 @@ License:
 <br/>
 <br/>
 
-void_thread_pool.cpp is distributed under the terms of the MIT license.
+satellite_terminal is distributed under the terms of the MIT license.
 Learn about the MIT license [here](https://choosealicense.com/licenses/mit/)
 

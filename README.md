@@ -5,16 +5,16 @@
 
 [seb.nf.sikora@protonmail.com](mailto:seb.nf.sikora@protonmail.com)
 
-Updated 26/11/2021.
+Updated 27/11/2021.
 
 What is it?
 -------------------------
-Blah.
+satellite_terminal is a simple library that enables you to easily spawn and communicate bidirectionally with client processes in separate terminal emulator instances.
 <br />
 
 How to use it?
 -------------------------
-Blah.
+
 <br />
 
 ```cpp

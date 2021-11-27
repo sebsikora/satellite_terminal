@@ -25,17 +25,28 @@
 #include <string>
 #include <vector>
 
+struct error_descriptor {
+	int err_no;
+	std::string func_call;
+	error_descriptor& operator=(error_descriptor const& rhs) {
+		err_no = rhs.err_no;
+		func_call = rhs.func_call;
+		return *this;
+	}
+};
+
+// Component base class. Functionality common to both server and client classes.
 class SatTerm_Component {
 	public:
-		SatTerm_Component (std::string const& identifier, bool display_messages);
-		virtual ~SatTerm_Component () {}
-		std::string GetMessage(bool capture_end_char, size_t rx_fifo_index = 0);
-		int SendMessage(std::string message, size_t tx_fifo_index = 0);
+		SatTerm_Component () {}				// Abstract base class constructor.
+		virtual ~SatTerm_Component () {}	// virtual destructor for abstract base class.
+		std::string GetMessage(unsigned long timeout_seconds = 0, bool capture_end_char = false, size_t rx_fifo_index = 0);
+		int SendMessage(std::string const& message, size_t tx_fifo_index = 0);
 		int SendBytes(const char* bytes, size_t byte_count, size_t tx_fifo_index = 0);
 		bool IsInitialised(void);
 		size_t GetTxFifoCount(void);
 		size_t GetRxFifoCount(void);
-		int GetErrorCode(void);
+		error_descriptor GetErrorCode(void);
 
 	protected:
 		bool OpenRxFifos(void);
@@ -45,15 +56,21 @@ class SatTerm_Component {
 		std::string m_component_type = "";
 		std::string m_identifier = "";
 		char m_end_char = 0;
-		std::vector<std::string> m_current_messages = {};
 		std::vector<int> m_tx_fifo_descriptors = {};
 		std::vector<int> m_rx_fifo_descriptors = {};
 		std::vector<std::string> m_rx_fifo_paths = {};
 		std::vector<std::string> m_tx_fifo_paths = {};
 		bool m_initialised_successfully = false;
-		int m_error_code = 0;
+		error_descriptor m_error_code = {0, ""};
+
+	private:
+		int PollToOpenFifoForRx(std::string const& fifo_path, unsigned long start_time, unsigned long timeout_seconds);
+		bool PollToReceiveInitMessage(int fifo_descriptor, std::string const& fifo_path, unsigned long start_time, unsigned long timeout_seconds);
+
+		std::vector<std::string> m_current_messages = {};
 };
 
+// Server derived class.
 class SatTerm_Server : public SatTerm_Component {
 	public:
 		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal,
@@ -73,12 +90,14 @@ class SatTerm_Server : public SatTerm_Component {
 		std::string m_stop_signal = "";
 };
 
+// Client derived class.
 class SatTerm_Client : public SatTerm_Component {
 	public:
 		SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = false);
 		SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages = false);
-		void Configure(void);
 		
 	private:
+		void ParseVarargs(size_t argv_start_index, char* argv[], std::vector<std::string> &tx_fifo_paths_container, std::vector<std::string> &rx_fifo_paths_container);
+		void Configure(void);
 		bool OpenFifos(void);
 };

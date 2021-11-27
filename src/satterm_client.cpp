@@ -26,11 +26,21 @@
 #include <vector>
 #include <iostream>
 
+#include <signal.h>           // SIGPIPE, SIG_IGN.
+
 #include "satellite_terminal.h"
 
-SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages)
- : SatTerm_Component(identifier, display_messages) {
-	// Create a client by directly specifying rx and tx fifo paths.
+// Class constructors and member function definitions for derived Client class.
+
+// Create a client by directly specifying rx and tx fifo paths.
+SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages) {
+	m_identifier = identifier;
+	m_display_messages = display_messages;
+	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
+		                         // a SIGPIPE signal is generated and this process terminates.
+                                 // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
+                                 // After each write() call we need to check the return value and if -1 check for the EPIPE error code
+                                 // before/if writing again.
 	m_component_type = "Client";
 	m_end_char = end_char;
 	m_rx_fifo_paths = rx_fifo_paths;
@@ -38,25 +48,33 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 	Configure();
 }
 
-SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages)
- : SatTerm_Component(identifier, display_messages) {
-	// Construct a client by parsing argv from the stipulated argument index (inclusive).
+// Construct a client by parsing argv from the stipulated argument index (inclusive).
+SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages) {
+	m_identifier = identifier;
+	m_display_messages = display_messages;
+	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
+		                         // a SIGPIPE signal is generated and this process terminates.
+                                 // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
+                                 // After each write() call we need to check the return value and if -1 check for the EPIPE error code
+                                 // before/if writing again.
 	m_component_type = "Client";
 	m_end_char = end_char;
+	ParseVarargs(argv_start_index, argv, m_tx_fifo_paths, m_rx_fifo_paths);
+	Configure();
+}
+
+void SatTerm_Client::ParseVarargs(size_t argv_start_index, char* argv[], std::vector<std::string> &tx_fifo_paths_container, std::vector<std::string> &rx_fifo_paths_container) {
 	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));
 	size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 1]));
 	
-	std::vector<std::string> tx_fifo_paths = {};
 	size_t offset = argv_start_index + 2;
 	for (size_t i = offset; i < offset + tx_fifo_count; i ++) {
-		m_tx_fifo_paths.emplace_back(std::string(argv[i]));
+		tx_fifo_paths_container.emplace_back(std::string(argv[i]));
 	}
 	
-	std::vector<std::string> rx_fifo_paths = {};
 	for (size_t i = offset + tx_fifo_count; i < offset + tx_fifo_count + rx_fifo_count; i ++) {
-		m_rx_fifo_paths.emplace_back(std::string(argv[i]));
+		rx_fifo_paths_container.emplace_back(std::string(argv[i]));
 	}
-	Configure();
 }
 
 void SatTerm_Client::Configure() {

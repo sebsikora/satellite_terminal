@@ -29,6 +29,7 @@
 #include <stdlib.h>					// mkinfo(), exit().
 #include <sys/wait.h>				// wait().
 #include <errno.h>					// errno.
+#include <signal.h>                 // SIGPIPE, SIG_IGN.
 
 #include <string>					// std::string.
 #include <vector>					// std::vector.
@@ -37,8 +38,16 @@
 
 #include "satellite_terminal.h"
 
-SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count)
- : SatTerm_Component(identifier, display_messages) {
+// Class constructor and member function definitions for derived Server class.
+
+SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count) {
+	m_identifier = identifier;
+	m_display_messages = display_messages;
+	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
+		                         // a SIGPIPE signal is generated and this process terminates.
+                                 // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
+                                 // After each write() call we need to check the return value and if -1 check for the EPIPE error code
+                                 // before/if writing again.
 	m_component_type = "Server";
 	m_path_to_client_binary = path_to_client_binary;
 	m_end_char = end_char;
@@ -51,9 +60,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 		if ((m_client_pid = StartClient()) < 0) {
 			std::string message = "Unable to start client process.";
 			std::cout << message << std::endl;
-			if (m_display_messages) {
-				success = false;
-			}
+			success = false;
 		} else {
 			if (m_display_messages) {
 				std::string message = "Client process started.";
@@ -98,7 +105,7 @@ SatTerm_Server::~SatTerm_Server() {
 }
 
 bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
-	m_error_code = 0;
+	m_error_code = {0, ""};
 	bool success = true;
 	int status = 0;
 	for (size_t tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
@@ -107,7 +114,7 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 		m_tx_fifo_paths.emplace_back(fifo_path);
 		status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
 		if (status < 0) {
-			m_error_code = errno;
+			m_error_code = {errno, "mkfifo()"};
 			if (m_display_messages) {
 				std::string error_message = "Unable to open fifo at path " + fifo_path;
 				perror(error_message.c_str());
@@ -123,7 +130,7 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 			m_rx_fifo_paths.emplace_back(fifo_path);
 			status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
 			if (status < 0) {
-				m_error_code = errno;
+				m_error_code = {errno, "mkfifo()"};
 				if (m_display_messages) {
 					std::string error_message = "Unable to open fifo at path " + fifo_path;
 					perror(error_message.c_str());
@@ -137,10 +144,11 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 }
 
 pid_t SatTerm_Server::StartClient() {
+	m_error_code = {0, ""};
 	pid_t process = fork();
     if (process < 0)
     {
-		m_error_code = errno;
+		m_error_code = {errno, "fork()"};
         if (m_display_messages) {
 			perror("fork() failed to start client process failed."); // fork() failed.
 		}
@@ -162,7 +170,7 @@ pid_t SatTerm_Server::StartClient() {
 		execl("/usr/bin/terminator", "/usr/bin/terminator", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
         execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to xterm if terminator not available.
         perror("Client process execl() failed to start client binary.");
-        std::exit(1);		// Have to exit() here to terminate client process if we couldn't start a terminal emulator.
+        std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
         return -1;
     }
     return process;

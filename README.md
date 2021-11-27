@@ -11,6 +11,7 @@ A simple library that enables you to easily spawn and communicate bidirectionall
 <br />
 
 Updated 27/11/2021.
+<br />
 
 What is it?
 -------------------------

@@ -3,6 +3,7 @@
 
 © 2021 Dr Sebastien Sikora.
 <br />
+<br />
 
 A simple library that enables you to easily spawn and communicate bidirectionally with client processes in separate terminal emulator instances.
 <br />

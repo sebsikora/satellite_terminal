@@ -11,21 +11,28 @@ int main(int argc, char *argv[]) {
 	size_t argv_start_index = 1;
 	SatTerm_Client stc("test_client", '\n', argv_start_index, argv, true);
 
-	if (stc.IsInitialised()) {
-		
-		std::string inbound_message = "";
-		
-		while ((stc.GetErrorCode().err_no == 0) && (inbound_message != "q")) {
-			inbound_message = stc.GetMessage();
+	if (stc.IsConnected()) {
+		while (stc.GetErrorCode().err_no == 0) {
+			std::string inbound_message = stc.GetMessage();
 			if (inbound_message != "") {
 				std::cout << inbound_message << std::endl;
-				stc.SendMessage(inbound_message);
+				if (inbound_message != "q") {
+					stc.SendMessage(inbound_message);
+				} else {
+					break;
+				}
 			}
 			usleep(1000);
 		}
+		if (stc.GetErrorCode().err_no != 0) {
+			std::cout << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
+		}
+		sleep(10);
 	} else {
-		std::cout << "Client initialisation failed." << std::endl;
-		sleep(5);
+		if (stc.GetErrorCode().err_no != 0) {
+			std::cout << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
+		}
+		sleep(10);
 	}
 	return 0;
 }

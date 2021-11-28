@@ -7,7 +7,7 @@
 <br />
 <br />
 
-A simple library that enables you to easily spawn and communicate bidirectionally with client processes in separate terminal emulator instances.
+A simple C++ library for POSIX compatible operating systems that enables your project to easily spawn and communicate bidirectionally with client processes in separate terminal emulator instances.
 <br />
 
 Updated 27/11/2021.

@@ -58,6 +58,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 
 	if (success) {
 		if ((m_client_pid = StartClient()) < 0) {
+			m_error_code = {1, "fork()"};
 			std::string message = "Unable to start client process.";
 			std::cout << message << std::endl;
 			success = false;
@@ -73,11 +74,11 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 			std::cout << message << std::endl;
 		}
 	}
-	
 	if (success) {
-		success = OpenFifos();
+		unsigned long timeout_seconds = 5;
+		success = OpenFifos(timeout_seconds);
 		if (success) {
-			m_initialised_successfully = true;
+			m_connected = true;
 			if (m_display_messages) {
 				std::string message = "Server " + m_identifier + " initialised successfully.";
 				std::cout << message << std::endl;
@@ -87,20 +88,44 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 				//~SendMessage(message, tx_fifo_index);
 			//~}
 		} else {
-			m_initialised_successfully = false;
+			m_connected = false;
 			if (m_display_messages) {
-				std::string message = "Server " + m_identifier + " unable to open fifo(s).";
+				std::string message = "Server " + m_identifier + " unable to intialise connection.";
 				std::cout << message << std::endl;
 			}
 		}
 	} else {
-		m_initialised_successfully = false;
+		m_connected = false;
 	}
 }
 
 SatTerm_Server::~SatTerm_Server() {
-	if (m_initialised_successfully) {
-		Stop();
+	if (IsConnected()) {
+		SendMessage(m_stop_signal, m_stop_fifo_index);
+		std::cout << "Waiting for client process to terminate..." << std::endl;
+	}
+	// Poll for EOF on read on fifo 0 (tells us that client write end has closed).
+	while(IsConnected()) {
+		GetMessage(0, false, 0);
+	}
+	// Close and delete FIFO buffers.
+	for (size_t fifo_index = 0; fifo_index < m_rx_fifo_descriptors.size(); fifo_index ++) {
+		close(m_rx_fifo_descriptors[fifo_index]);
+		int e = unlink(m_rx_fifo_paths[fifo_index].c_str());
+		if (e < 0) {
+			std::string error_message = "Unable to unlink fifo at path " + m_rx_fifo_paths[fifo_index];
+			perror(error_message.c_str());
+		}
+		remove(m_rx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
+	}
+	for (size_t fifo_index = 0; fifo_index < m_tx_fifo_descriptors.size(); fifo_index ++) {
+		close(m_tx_fifo_descriptors[fifo_index]);
+		int e = unlink(m_tx_fifo_paths[fifo_index].c_str());
+		if (e < 0) {
+			std::string error_message = "Unable to unlink fifo at path " + m_tx_fifo_paths[fifo_index];
+			perror(error_message.c_str());
+		}
+		remove(m_tx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
 	}
 }
 
@@ -165,10 +190,13 @@ pid_t SatTerm_Server::StartClient() {
 		for (const auto& fifo_path : m_tx_fifo_paths) {
 			arg_string += " " + fifo_path;
 		}
+		
 		// No need to check execv() return value. If it returns, you know it failed.
 		execl("/usr/bin/x-terminal-emulator", "/usr/bin/x-terminal-emulator", "-e", arg_string.c_str(), (char*) NULL);
+		execl("/usr/bin/lxterminal", "/usr/bin/lxterminal", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
 		execl("/usr/bin/terminator", "/usr/bin/terminator", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
-        execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to xterm if terminator not available.
+        execl("/usr/bin/lxterm", "/usr/bin/lxterm", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
+		execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to xterm if terminator not available.
         perror("Client process execl() failed to start client binary.");
         std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
         return -1;
@@ -176,47 +204,11 @@ pid_t SatTerm_Server::StartClient() {
     return process;
 }
 
-bool SatTerm_Server::OpenFifos() {
+bool SatTerm_Server::OpenFifos(unsigned long timeout_seconds) {
 	bool success = false;
-	success = OpenRxFifos();
+	success = OpenRxFifos(timeout_seconds);
 	if (success) {		// Only attempt to open fifos for writing if we were able to open the fifos for reading.
-		success = OpenTxFifos();
+		success = OpenTxFifos(timeout_seconds);
 	}
 	return success;
-}
-
-int SatTerm_Server::Stop() {
-	SendMessage(m_stop_signal, m_stop_fifo_index);
-	int status = Finish();
-	return status;
-}
-
-int SatTerm_Server::Finish() {
-	int status;
-	pid_t wait_result = waitpid(m_client_pid, &status, 0);  // Parent process waits here for child to terminate.
-	if (m_display_messages) {
-		std::cout << "Client process finished." << std::endl;
-		std::cout << "Process " << (unsigned long) wait_result << " returned result: " << status << std::endl;
-	}
-	// Close and delete FIFO buffers.
-	for (size_t fifo_index = 0; fifo_index < m_rx_fifo_descriptors.size(); fifo_index ++) {
-		close(m_rx_fifo_descriptors[fifo_index]);
-		int e = unlink(m_rx_fifo_paths[fifo_index].c_str());
-		if (e < 0) {
-			std::string error_message = "Unable to unlink fifo at path " + m_rx_fifo_paths[fifo_index];
-			perror(error_message.c_str());
-		}
-		remove(m_rx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
-	}
-	for (size_t fifo_index = 0; fifo_index < m_tx_fifo_descriptors.size(); fifo_index ++) {
-		close(m_tx_fifo_descriptors[fifo_index]);
-		int e = unlink(m_tx_fifo_paths[fifo_index].c_str());
-		if (e < 0) {
-			std::string error_message = "Unable to unlink fifo at path " + m_tx_fifo_paths[fifo_index];
-			perror(error_message.c_str());
-		}
-		remove(m_tx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
-	}
-	
-	return status;
 }

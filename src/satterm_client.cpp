@@ -27,6 +27,7 @@
 #include <iostream>
 
 #include <signal.h>           // SIGPIPE, SIG_IGN.
+#include <unistd.h>					// write(), read(), sleep(), fork(), execl(), close(), unlink().
 
 #include "satellite_terminal.h"
 
@@ -63,6 +64,15 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, siz
 	Configure();
 }
 
+SatTerm_Client::~SatTerm_Client() {
+	if (IsConnected()) {
+		// Some terminal emulators perform more than one fork() while starting the binary, and as such it becomes very difficult to obtain the
+		// pid of the (grand)child process and waitpid() for the client to finish. Instead the server will loop on GetMessage() on the zeroth fifo
+		// until GetErrorCode() returns {-1, "read()_EOF"}. We trigger that here by closing the write end of that fifo
+		close(m_tx_fifo_descriptors[0]);
+	}
+}
+
 void SatTerm_Client::ParseVarargs(size_t argv_start_index, char* argv[], std::vector<std::string> &tx_fifo_paths_container, std::vector<std::string> &rx_fifo_paths_container) {
 	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));
 	size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 1]));
@@ -78,27 +88,28 @@ void SatTerm_Client::ParseVarargs(size_t argv_start_index, char* argv[], std::ve
 }
 
 void SatTerm_Client::Configure() {
-	bool success = OpenFifos();
+	unsigned long timeout_seconds = 5;
+	bool success = OpenFifos(timeout_seconds);
 	if (success) {
 		if (m_display_messages) {
 			std::string message = "Client " + m_identifier + " initialised successfully.";
 			std::cout << message << std::endl;
 		}
-		m_initialised_successfully = true;
+		m_connected = true;
 	} else {
 		if (m_display_messages) {
-			std::string message = "Client " + m_identifier + " unable to open fifo(s).";
+			std::string message = "Client " + m_identifier + " unable to intialise connection.";
 			std::cout << message << std::endl;
 		}
-		m_initialised_successfully = false;
+		m_connected = false;
 	}
 }
 
-bool SatTerm_Client::OpenFifos() {
+bool SatTerm_Client::OpenFifos(unsigned long timeout_seconds) {
 	bool success = false;
-	success = OpenTxFifos();
+	success = OpenTxFifos(timeout_seconds);
 	if (success) {
-		success = OpenRxFifos();
+		success = OpenRxFifos(timeout_seconds);
 	}
 	return success;
 }

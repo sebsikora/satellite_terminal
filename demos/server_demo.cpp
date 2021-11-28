@@ -10,10 +10,8 @@ int main () {
 	
 	SatTerm_Server sts("test_server", "./client_demo", '\n', "q\n", true);
 	
-	if (sts.IsInitialised()) {
-		
+	if (sts.IsConnected()) {
 		size_t message_count = 10;
-		
 		for (size_t i = 0; i < message_count; i ++) {
 			std::string outbound_message = "Message number " + std::to_string(i) + " from server.";
 			sts.SendMessage(outbound_message);
@@ -29,10 +27,14 @@ int main () {
 			}
 			usleep(1000);
 		}
-		
-		//~sleep(10);
+		if (sts.GetErrorCode().err_no != 0) {
+			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+		}
+		sleep(10);
 	} else {
-		std::cout << "Server initialisation failed." << std::endl;
+		if (sts.GetErrorCode().err_no != 0) {
+			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+		}
 		sleep(10);
 	}
 	return 0;

@@ -57,7 +57,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	bool success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {
-		if ((m_client_pid = StartClient()) < 0) {
+		if (StartClient() < 0) {
 			m_error_code = {1, "fork()"};
 			std::string message = "Unable to start client process.";
 			std::cout << message << std::endl;

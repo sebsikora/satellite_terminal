@@ -86,7 +86,6 @@ class SatTerm_Server : public SatTerm_Component {
 		bool CreateFifos(size_t sc_fifo_count, size_t cs_fifo_count);
 		bool OpenFifos(unsigned long timeout_seconds);
 		
-		pid_t m_client_pid = 0;
 		std::string m_path_to_client_binary = "";
 		int m_stop_fifo_index = 0;
 		std::string m_stop_signal = "";

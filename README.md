@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 ```
 <br />
 
-Compile and run:
+Compile server_demo.cpp and client_demo.cpp, run server_demo:
 <br />
 
 ```
@@ -235,6 +235,9 @@ Waiting for client process to terminate...
 EOF on read() to fifo index 0 suggests counterpart terminated.
 user@home:~/Documents/cpp_projects/satellite_terminal$
 ```
+<br />
+
+Output in child terminal emulator instance:
 <br />
 
 ```

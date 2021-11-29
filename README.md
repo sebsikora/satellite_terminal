@@ -60,6 +60,8 @@ int main(int argc, char *argv[]) {
 	size_t argv_start_index = 1;
 	SatTerm_Client stc("test_client", argv_start_index, argv);
 
+...
+...
 ```
 <br />
 

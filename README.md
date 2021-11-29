@@ -36,18 +36,24 @@ The parent process spawns the child process by instantiating a SatTerm_Server. T
 <br />
 
 ```cpp
+...
 
 SatTerm_Server sts("test_server", "./client_demo");
 
 // Path to child binary above can incorporate desired command-line arguments
 // eg: "./client_demo --full-screen=true"
 
+if (sts.IsConnected()) {
+	// We are good to go!
+}
+
+...
 ```
 <br />
 
-The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option.
+The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string.
 
-The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string. The server constructor will then block while it waits for the child process to connect.
+The server constructor will then block while it waits for the child process to connect, or timeout. When it returns, if the server's IsConnected() member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
 
 Blah...
 <br />
@@ -60,7 +66,10 @@ int main(int argc, char *argv[]) {
 	size_t argv_start_index = 1;
 	SatTerm_Client stc("test_client", argv_start_index, argv);
 
-...
+	if (stc.IsConnected()) {
+		// We are good to go!
+	}
+
 ...
 ```
 <br />

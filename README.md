@@ -102,12 +102,14 @@ Blah [blah]() `blah.cpp`.
 
 Blah.
 <br />
+<br />
 
 ## License:
+<br />
 
 ![Mit License Logo](./220px-MIT_logo.png)
-<br/>
-<br/>
+<br />
+<br />
 
 satellite_terminal is distributed under the terms of the MIT license.
 Learn about the MIT license [here](https://choosealicense.com/licenses/mit/)

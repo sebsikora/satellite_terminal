@@ -40,6 +40,7 @@ By default two named pipes will be created to form a tx-rx pair, but an arbitrar
 
 ```cpp
 // parent.cpp
+#include "satellite_terminal.h"
 ...
 
 SatTerm_Server sts("test_server", "./child_binary");
@@ -68,6 +69,7 @@ The paths to the named pipes are passed to the child binary via it's command-lin
 
 ```cpp
 // child.cpp
+#include "satellite_terminal.h"
 
 int main(int argc, char *argv[]) {
 	

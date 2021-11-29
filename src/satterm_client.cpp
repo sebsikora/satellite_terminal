@@ -22,12 +22,12 @@
 	
 */
 
-#include <string>
-#include <vector>
-#include <iostream>
+#include <string>              // std::string.
+#include <vector>              // std::vector.
+#include <iostream>            // std::cout, std::endl.
 
-#include <signal.h>           // SIGPIPE, SIG_IGN.
-#include <unistd.h>					// write(), read(), sleep(), fork(), execl(), close(), unlink().
+#include <signal.h>            // SIGPIPE, SIG_IGN.
+#include <unistd.h>            // write(), read(), close().
 
 #include "satellite_terminal.h"
 
@@ -37,7 +37,7 @@
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
-
+	
 	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
 		                         // a SIGPIPE signal is generated and this process terminates.
                                  // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
@@ -55,7 +55,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
-
+	
 	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
 		                         // a SIGPIPE signal is generated and this process terminates.
                                  // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323

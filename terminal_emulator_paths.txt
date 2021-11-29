@@ -1,0 +1,10 @@
+/usr/bin/x-terminal-emulator
+/bin/x-terminal-emulator
+/usr/bin/lxterminal
+/bin/lxterminal
+/usr/bin/terminator
+/bin/terminator
+/usr/bin/lxterm
+/bin/lxterm
+/usr/bin/xterm
+/bin/xterm

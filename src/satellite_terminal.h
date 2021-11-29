@@ -22,8 +22,8 @@
 	
 */
 
-#include <string>
-#include <vector>
+#include <string>                    // std::string.
+#include <vector>                    // std::vector.
 
 struct error_descriptor {
 	int err_no;
@@ -83,7 +83,8 @@ class SatTerm_Server : public SatTerm_Component {
 		~SatTerm_Server();
 		
 	private:
-		pid_t StartClient(void);
+		std::vector<std::string> LoadTerminalEmulatorPaths(std::string const& file_path);
+		pid_t StartClient(std::string const& path_to_terminal_emulator_paths);
 		bool CreateFifos(size_t sc_fifo_count, size_t cs_fifo_count);
 		bool OpenFifos(unsigned long timeout_seconds);
 		

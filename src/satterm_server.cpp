@@ -22,19 +22,19 @@
 	
 */
 
-#include <stdio.h>					// perror().
-#include <fcntl.h>					// open() and O_RDONLY, O_WRONLY, etc.
-#include <unistd.h>					// write(), read(), sleep(), fork(), execl(), close(), unlink().
-#include <sys/stat.h>				// mkinfo().
-#include <stdlib.h>					// mkinfo(), exit().
-#include <sys/wait.h>				// wait().
-#include <errno.h>					// errno.
-#include <signal.h>                 // SIGPIPE, SIG_IGN.
+#include <stdio.h>                    // perror().
+#include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
+#include <unistd.h>                   // write(), read(), sleep(), fork(), execl(), close(), unlink().
+#include <sys/stat.h>                 // mkfifo().
+#include <stdlib.h>                   // exit().
+#include <errno.h>                    // errno.
+#include <signal.h>                   // SIGPIPE, SIG_IGN.
 
-#include <string>					// std::string.
-#include <vector>					// std::vector.
-#include <iostream>					// std::cout, std::cerr, std::endl.
-#include <cstdio>					// remove().
+#include <string>                     // std::string.
+#include <vector>                     // std::vector.
+#include <iostream>                   // std::cout, std::cerr, std::endl.
+#include <fstream>                    // std::ifstream.
+#include <cstdio>                     // remove().
 
 #include "satellite_terminal.h"
 
@@ -43,6 +43,7 @@
 SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
+	
 	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
 		                         // a SIGPIPE signal is generated and this process terminates.
                                  // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
@@ -57,10 +58,12 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	bool success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {
-		if (StartClient() < 0) {
+		if (StartClient("./terminal_emulator_paths.txt") < 0) {
 			m_error_code = {1, "fork()"};
-			std::string message = "Unable to start client process.";
-			std::cout << message << std::endl;
+			if (m_display_messages) {
+				std::string message = "Unable to start client process.";
+				std::cout << message << std::endl;
+			}
 			success = false;
 		} else {
 			if (m_display_messages) {
@@ -83,10 +86,6 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 				std::string message = "Server " + m_identifier + " initialised successfully.";
 				std::cout << message << std::endl;
 			}
-			//~for (int tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
-				//~std::string message("Satellite terminal server " + identifier + " checking in.");
-				//~SendMessage(message, tx_fifo_index);
-			//~}
 		} else {
 			m_connected = false;
 			if (m_display_messages) {
@@ -102,7 +101,9 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 SatTerm_Server::~SatTerm_Server() {
 	if (IsConnected()) {
 		SendMessage(m_stop_signal, m_stop_fifo_index);
-		std::cout << "Waiting for client process to terminate..." << std::endl;
+		if (m_display_messages) {
+			std::cout << "Waiting for client process to terminate..." << std::endl;
+		}
 	}
 	// Poll for EOF on read on fifo 0 (tells us that client write end has closed).
 	while(IsConnected()) {
@@ -112,7 +113,7 @@ SatTerm_Server::~SatTerm_Server() {
 	for (size_t fifo_index = 0; fifo_index < m_rx_fifo_descriptors.size(); fifo_index ++) {
 		close(m_rx_fifo_descriptors[fifo_index]);
 		int e = unlink(m_rx_fifo_paths[fifo_index].c_str());
-		if (e < 0) {
+		if ((e < 0) && m_display_messages) {
 			std::string error_message = "Unable to unlink fifo at path " + m_rx_fifo_paths[fifo_index];
 			perror(error_message.c_str());
 		}
@@ -122,7 +123,7 @@ SatTerm_Server::~SatTerm_Server() {
 	for (size_t fifo_index = 0; fifo_index < m_tx_fifo_descriptors.size(); fifo_index ++) {
 		close(m_tx_fifo_descriptors[fifo_index]);
 		int e = unlink(m_tx_fifo_paths[fifo_index].c_str());
-		if (e < 0) {
+		if ((e < 0) && m_display_messages) {
 			std::string error_message = "Unable to unlink fifo at path " + m_tx_fifo_paths[fifo_index];
 			perror(error_message.c_str());
 		}
@@ -175,40 +176,48 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	return success;
 }
 
-pid_t SatTerm_Server::StartClient() {
+pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths) {
 	m_error_code = {0, ""};
 	
-	pid_t process = fork();
-    if (process < 0) {
-		m_error_code = {errno, "fork()"};
-        if (m_display_messages) {
-			perror("fork() failed to start client process failed."); // fork() failed.
-		}
-        return process;
-    }
+	std::vector<std::string> terminal_emulator_paths = LoadTerminalEmulatorPaths(path_to_terminal_emulator_paths);
 	
-    if (process == 0) {
-		// We are in the child process!
-        std::string arg_string = m_path_to_client_binary;
-        arg_string += " " + std::to_string(m_rx_fifo_paths.size());
-        arg_string += " " + std::to_string(m_tx_fifo_paths.size());
-        for (const auto& fifo_path : m_rx_fifo_paths) {
-			arg_string += " " + fifo_path;
-		}
-		for (const auto& fifo_path : m_tx_fifo_paths) {
-			arg_string += " " + fifo_path;
+	pid_t process;
+	if (terminal_emulator_paths.size() > 0) {
+		process = fork();
+		if (process < 0) {
+			m_error_code = {errno, "fork()"};
+			if (m_display_messages) {
+				perror("fork() to start client process failed."); // fork() failed.
+			}
+			return process;
 		}
 		
-		// No need to check execv() return value. If it returns, you know it failed.
-		execl("/usr/bin/x-terminal-emulator", "/usr/bin/x-terminal-emulator", "-e", arg_string.c_str(), (char*) NULL);
-		execl("/usr/bin/lxterminal", "/usr/bin/lxterminal", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
-		execl("/usr/bin/terminator", "/usr/bin/terminator", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
-        execl("/usr/bin/lxterm", "/usr/bin/lxterm", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to terminator if x-terminal-emulator not available.
-		execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", arg_string.c_str(), (char*) NULL);	// Fail through to xterm if terminator not available.
-        perror("Client process execl() failed to start client binary.");
-        std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
-        return -1;
-    }
+		if (process == 0) {
+			// We are in the child process!
+			std::string arg_string = m_path_to_client_binary;
+			arg_string += " " + std::to_string(m_rx_fifo_paths.size());
+			arg_string += " " + std::to_string(m_tx_fifo_paths.size());
+			for (const auto& fifo_path : m_rx_fifo_paths) {
+				arg_string += " " + fifo_path;
+			}
+			for (const auto& fifo_path : m_tx_fifo_paths) {
+				arg_string += " " + fifo_path;
+			}
+			
+			for (const auto terminal_path : terminal_emulator_paths) {
+				// No need to check execv() return value. If it returns, you know it failed.
+				execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);
+			}
+			if (m_display_messages) {
+				std::string error_string = "Client process execl() failed to start client binary. Check terminal_emulator_paths.txt";
+				perror(error_string.c_str());
+			}
+			std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
+			return -1;
+		}
+	} else {
+		return -1;
+	}
     return process;
 }
 
@@ -220,4 +229,25 @@ bool SatTerm_Server::OpenFifos(unsigned long timeout_seconds) {
 		success = OpenTxFifos(timeout_seconds);
 	}
 	return success;
+}
+
+std::vector<std::string> SatTerm_Server::LoadTerminalEmulatorPaths(std::string const& file_path) {
+	m_error_code = {0, ""};
+	
+	std::vector<std::string> terminal_emulator_paths = {};
+	std::ifstream data_file (file_path);
+	std::string file_row = "";
+
+	if (data_file.is_open()) {
+		while (std::getline(data_file, file_row)) {
+			terminal_emulator_paths.push_back(file_row);
+		}
+		data_file.close();
+	} else {
+		m_error_code = {-1, "Unable to open terminal emulator paths file at " + file_path};
+		if (m_display_messages) {
+			std::cout << "Unable to open terminal emulator paths file at " << file_path << std::endl;
+		}
+	}
+	return terminal_emulator_paths;
 }

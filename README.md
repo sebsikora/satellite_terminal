@@ -33,7 +33,6 @@ Using satellite_terminal in a C++ project is very easy. Let's demonstrate this v
 
 The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string, the path to the child process binary as arguments. By default two named pipes will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
 <br />
-<br />
 
 ```cpp
 ...
@@ -54,9 +53,9 @@ if (sts.IsConnected()) {
 The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string.
 
 The server constructor will then block while it waits for the child process to connect, or timeout. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
+<br />
 
 Blah...
-<br />
 <br />
 
 ```cpp

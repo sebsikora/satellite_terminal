@@ -213,6 +213,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 				std::string arg_string = m_path_to_client_binary;
 				arg_string += " client_args";
 				arg_string += " " + std::string(working_path) + "/";
+				arg_string += " " + m_stop_message;
 				arg_string += " " + std::to_string(m_rx_fifo_paths.size());
 				arg_string += " " + std::to_string(m_tx_fifo_paths.size());
 				for (const auto& fifo_path : m_rx_fifo_paths) {
@@ -222,6 +223,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 					arg_string += " " + fifo_path;
 				}
 				
+				//~std::cout << "Full command is " << arg_string << std::endl;
 				for (const auto terminal_path : terminal_emulator_paths) {
 					// No need to check execv() return value. If it returns, you know it failed.
 					execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);

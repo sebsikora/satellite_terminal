@@ -81,7 +81,7 @@ class SatTerm_Component {
 class SatTerm_Server : public SatTerm_Component {
 	public:
 		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true, size_t stop_fifo_index = 0,
-		               size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = '\n', std::string const& stop_message = "q");
+		               size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = 3, std::string const& stop_message = "q");
 		~SatTerm_Server();
 		
 	private:
@@ -97,8 +97,8 @@ class SatTerm_Server : public SatTerm_Component {
 // Client derived class.
 class SatTerm_Client : public SatTerm_Component {
 	public:
-		SatTerm_Client(std::string const& identifier, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = true, char end_char = '\n', std::string const& stop_message = "q");
-		SatTerm_Client(std::string const& identifier, int argc, char* argv[], bool display_messages = true, char end_char = '\n', std::string const& stop_message = "q");
+		SatTerm_Client(std::string const& identifier, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = true, char end_char = 3, std::string const& stop_message = "q");
+		SatTerm_Client(std::string const& identifier, int argc, char* argv[], bool display_messages = true, char end_char = 3);
 		~SatTerm_Client();
 		
 	private:

@@ -53,7 +53,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, std::vector<std::s
 }
 
 // Construct a client by parsing argv from the stipulated argument index (inclusive).
-SatTerm_Client::SatTerm_Client(std::string const& identifier, size_t argv_start_index, char* argv[], bool display_messages, char end_char, std::string const& stop_message) {
+SatTerm_Client::SatTerm_Client(std::string const& identifier, char* argv[], bool display_messages, char end_char, std::string const& stop_message) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	
@@ -65,12 +65,13 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, size_t argv_start_
 	m_component_type = "Client";
 	m_end_char = end_char;
 	m_stop_message = stop_message;
-
+	
+	size_t argv_start_index = ParseVarargs(argv);
 	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));
 	size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 1]));
-	m_tx_fifo_paths = ParseVarargs(argv_start_index + 2, tx_fifo_count, argv);
-	m_rx_fifo_paths = ParseVarargs(argv_start_index + 2 + tx_fifo_count, rx_fifo_count, argv);
-
+	m_tx_fifo_paths = ParseFifos(argv_start_index + 2, tx_fifo_count, argv);
+	m_rx_fifo_paths = ParseFifos(argv_start_index + 2 + tx_fifo_count, rx_fifo_count, argv);
+	
 	Configure();
 }
 
@@ -83,7 +84,15 @@ SatTerm_Client::~SatTerm_Client() {
 	}
 }
 
-std::vector<std::string> SatTerm_Client::ParseVarargs(size_t argv_start_index, size_t argv_count, char* argv[]) {
+size_t SatTerm_Client::ParseVarargs(char* argv[]) {
+	size_t argument_index = 0;
+	while (std::string(argv[argument_index]) != "client_argstart") {
+		argument_index ++;
+	}
+	return argument_index + 1;
+}
+
+std::vector<std::string> SatTerm_Client::ParseFifos(size_t argv_start_index, size_t argv_count, char* argv[]) {
 	std::vector<std::string> paths_container = {};
 
 	for (size_t i = argv_start_index; i < argv_start_index + argv_count; i ++) {

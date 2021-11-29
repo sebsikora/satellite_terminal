@@ -195,6 +195,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 		if (process == 0) {
 			// We are in the child process!
 			std::string arg_string = m_path_to_client_binary;
+			arg_string += " client_argstart";
 			arg_string += " " + std::to_string(m_rx_fifo_paths.size());
 			arg_string += " " + std::to_string(m_tx_fifo_paths.size());
 			for (const auto& fifo_path : m_rx_fifo_paths) {

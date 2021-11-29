@@ -51,8 +51,8 @@ SatTerm_Server sts("test_server", "./child_binary");
 
 if (sts.IsConnected()) {
 	// We are good to go!
+	...
 }
-
 ...
 ```
 <br />
@@ -65,7 +65,9 @@ The server constructor will return once the communication channel is established
 
 ### Child process
 
-The paths to the named pipes are passed to the child binary via it's command-line arguments. The child binary instantiates a SatTerm_Client, passing the pointer to argv as a constructor argument along with an index to the first argument (indexed starting at 1). If the path to the child binary passed to the server constructor incorporates existing command-line arguments, this index needs to be increased to reflect this.
+The paths to the named pipes are passed to the child process via it's command-line arguments, therefore a pointer to argv must be passed to the SatTerm_Client constructor.
+
+The pipe path data is appended directly onto the child binary path string passed to the server constructor, so you can parse any arguments required by the child process as normal as long as argv is not modified. The client constructor will automatically parse the remaining arguments.
 <br />
 
 ```cpp
@@ -75,16 +77,14 @@ The paths to the named pipes are passed to the child binary via it's command-lin
 int main(int argc, char *argv[]) {
 	
 	// -- Your argument parser goes here ---
+	//       -- Don't modify argv! --
 	
-	size_t argv_start_index = 1;    // No other arguments in this case
-	                                // so start at index 1
-	
-	SatTerm_Client stc("test_client", argv_start_index, argv);
+	SatTerm_Client stc("test_client", argv);
 	
 	if (stc.IsConnected()) {
 		// We are good to go!
+		...
 	}
-
 ...
 ```
 <br />

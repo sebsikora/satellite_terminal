@@ -98,11 +98,12 @@ class SatTerm_Server : public SatTerm_Component {
 class SatTerm_Client : public SatTerm_Component {
 	public:
 		SatTerm_Client(std::string const& identifier, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = true, char end_char = '\n', std::string const& stop_message = "q");
-		SatTerm_Client(std::string const& identifier, size_t argv_start_index, char* argv[], bool display_messages = true, char end_char = '\n', std::string const& stop_message = "q");
+		SatTerm_Client(std::string const& identifier, char* argv[], bool display_messages = true, char end_char = '\n', std::string const& stop_message = "q");
 		~SatTerm_Client();
 		
 	private:
-		std::vector<std::string> ParseVarargs(size_t argv_start_index, size_t argv_count, char* argv[]);
+		size_t ParseVarargs(char* argv[]);
+		std::vector<std::string> ParseFifos(size_t argv_start_index, size_t argv_count, char* argv[]);
 		void Configure(void);
 		bool OpenFifos(unsigned long timeout_seconds);
 };

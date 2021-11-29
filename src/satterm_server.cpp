@@ -118,6 +118,7 @@ SatTerm_Server::~SatTerm_Server() {
 		}
 		remove(m_rx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
 	}
+	
 	for (size_t fifo_index = 0; fifo_index < m_tx_fifo_descriptors.size(); fifo_index ++) {
 		close(m_tx_fifo_descriptors[fifo_index]);
 		int e = unlink(m_tx_fifo_paths[fifo_index].c_str());
@@ -133,11 +134,14 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	m_error_code = {0, ""};
 	bool success = true;
 	int status = 0;
+	
 	for (size_t tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
 		std::string fifo_path = "./" + m_identifier + "_fifo_sc_" + std::to_string(tx_fifo_index);
 		remove(fifo_path.c_str());	// If temporary file already exists, delete it.
 		m_tx_fifo_paths.emplace_back(fifo_path);
+		
 		status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
+		
 		if (status < 0) {
 			m_error_code = {errno, "mkfifo()"};
 			if (m_display_messages) {
@@ -148,12 +152,15 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 			break;
 		}
 	}
+	
 	if (success) {
 		for (size_t rx_fifo_index = 0; rx_fifo_index < rx_fifo_count; rx_fifo_index ++) {
 			std::string fifo_path = "./" + m_identifier + "_fifo_cs_" + std::to_string(rx_fifo_index);
 			remove(fifo_path.c_str());	// If temporary file already exists, delete it.
 			m_rx_fifo_paths.emplace_back(fifo_path);
+			
 			status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
+			
 			if (status < 0) {
 				m_error_code = {errno, "mkfifo()"};
 				if (m_display_messages) {
@@ -170,15 +177,16 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 
 pid_t SatTerm_Server::StartClient() {
 	m_error_code = {0, ""};
+	
 	pid_t process = fork();
-    if (process < 0)
-    {
+    if (process < 0) {
 		m_error_code = {errno, "fork()"};
         if (m_display_messages) {
 			perror("fork() failed to start client process failed."); // fork() failed.
 		}
         return process;
     }
+	
     if (process == 0) {
 		// We are in the child process!
         std::string arg_string = m_path_to_client_binary;
@@ -207,6 +215,7 @@ pid_t SatTerm_Server::StartClient() {
 bool SatTerm_Server::OpenFifos(unsigned long timeout_seconds) {
 	bool success = false;
 	success = OpenRxFifos(timeout_seconds);
+
 	if (success) {		// Only attempt to open fifos for writing if we were able to open the fifos for reading.
 		success = OpenTxFifos(timeout_seconds);
 	}

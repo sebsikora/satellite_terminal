@@ -37,6 +37,7 @@
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
+
 	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
 		                         // a SIGPIPE signal is generated and this process terminates.
                                  // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
@@ -46,6 +47,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 	m_end_char = end_char;
 	m_rx_fifo_paths = rx_fifo_paths;
 	m_tx_fifo_paths = tx_fifo_paths;
+
 	Configure();
 }
 
@@ -53,6 +55,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
+
 	signal(SIGPIPE, SIG_IGN);    // If the reader at the other end of the pipe closes prematurely, when we try and write() to the pipe
 		                         // a SIGPIPE signal is generated and this process terminates.
                                  // We call signal() here to prevent the signal from being raised as-per https://stackoverflow.com/a/9036323
@@ -60,7 +63,12 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, siz
                                  // before/if writing again.
 	m_component_type = "Client";
 	m_end_char = end_char;
-	ParseVarargs(argv_start_index, argv, m_tx_fifo_paths, m_rx_fifo_paths);
+
+	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));
+	size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 1]));
+	m_tx_fifo_paths = ParseVarargs(argv_start_index + 2, tx_fifo_count, argv);
+	m_rx_fifo_paths = ParseVarargs(argv_start_index + 2 + tx_fifo_count, rx_fifo_count, argv);
+
 	Configure();
 }
 
@@ -73,23 +81,19 @@ SatTerm_Client::~SatTerm_Client() {
 	}
 }
 
-void SatTerm_Client::ParseVarargs(size_t argv_start_index, char* argv[], std::vector<std::string> &tx_fifo_paths_container, std::vector<std::string> &rx_fifo_paths_container) {
-	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));
-	size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 1]));
-	
-	size_t offset = argv_start_index + 2;
-	for (size_t i = offset; i < offset + tx_fifo_count; i ++) {
-		tx_fifo_paths_container.emplace_back(std::string(argv[i]));
+std::vector<std::string> SatTerm_Client::ParseVarargs(size_t argv_start_index, size_t argv_count, char* argv[]) {
+	std::vector<std::string> paths_container = {};
+
+	for (size_t i = argv_start_index; i < argv_start_index + argv_count; i ++) {
+		paths_container.emplace_back(std::string(argv[i]));
 	}
-	
-	for (size_t i = offset + tx_fifo_count; i < offset + tx_fifo_count + rx_fifo_count; i ++) {
-		rx_fifo_paths_container.emplace_back(std::string(argv[i]));
-	}
+	return paths_container;
 }
 
 void SatTerm_Client::Configure() {
 	unsigned long timeout_seconds = 5;
 	bool success = OpenFifos(timeout_seconds);
+
 	if (success) {
 		if (m_display_messages) {
 			std::string message = "Client " + m_identifier + " initialised successfully.";
@@ -108,6 +112,7 @@ void SatTerm_Client::Configure() {
 bool SatTerm_Client::OpenFifos(unsigned long timeout_seconds) {
 	bool success = false;
 	success = OpenTxFifos(timeout_seconds);
+
 	if (success) {
 		success = OpenRxFifos(timeout_seconds);
 	}

@@ -113,6 +113,100 @@ Blah.
 <br />
 <br />
 
+## Worked example
+
+```cpp
+// server_demo.cpp
+
+#include <unistd.h>					// sleep(), usleep().
+#include <ctime>                    // time().
+#include <iostream>                 // std::cout, std::endl.
+#include <string>                   // std::string.
+
+#include "satellite_terminal.h"
+
+int main (void) {
+	
+	SatTerm_Server sts("test_server", "./client_demo");
+	
+	if (sts.IsConnected()) {
+		size_t message_count = 10;
+		for (size_t i = 0; i < message_count; i ++) {
+			std::string outbound_message = "Message number " + std::to_string(i) + " from server.";
+			sts.SendMessage(outbound_message);
+		}
+
+		unsigned long timeout_seconds = 5;
+		unsigned long start_time = time(0);
+		
+		while ((sts.GetErrorCode().err_no == 0) && ((time(0) - start_time) < timeout_seconds)) {
+			std::string inbound_message = sts.GetMessage();
+			if (inbound_message != "") {
+				std::cout << "Message \"" << inbound_message << "\" returned by client." << std::endl;
+			}
+			usleep(1000);
+		}
+		if (sts.GetErrorCode().err_no != 0) {
+			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+		}
+		
+	} else {
+		if (sts.GetErrorCode().err_no != 0) {
+			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+		}
+		sleep(5);
+	}
+	return 0;
+}
+```
+<br />
+
+```cpp
+// client_demo.cpp
+
+#include <unistd.h>					// sleep(), usleep().
+#include <ctime>                    // time().
+#include <iostream>                 // std::cout, std::endl.
+#include <string>                   // std::string.
+
+#include "satellite_terminal.h"
+
+int main(int argc, char *argv[]) {
+	
+	SatTerm_Client stc("test_client", argc, argv);
+
+	if (stc.IsConnected()) {
+		while (stc.GetErrorCode().err_no == 0) {
+			std::string inbound_message = stc.GetMessage();
+			if (inbound_message != "") {
+				std::cout << inbound_message << std::endl;
+				if (inbound_message != stc.GetStopMessage()) {
+					stc.SendMessage(inbound_message);
+				} else {
+					break;
+				}
+			}
+			usleep(1000);
+		}
+		if (stc.GetErrorCode().err_no != 0) {
+			std::cout << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
+		}
+		sleep(5);
+	} else {
+		if (stc.GetErrorCode().err_no != 0) {
+			std::cout << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
+		}
+		sleep(5);
+	}
+	return 0;
+}
+```
+<br />
+
+Blah...
+<br />
+<br />
+
 ## License:
 <br />
 

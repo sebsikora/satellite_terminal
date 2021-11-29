@@ -178,8 +178,8 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 
 pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths) {
 	m_error_code = {0, ""};
-	
 	bool success = true;
+	
 	char working_path[FILENAME_MAX + 1];
 	char* retval = getcwd(working_path, FILENAME_MAX + 1);
 	if (retval == NULL) {

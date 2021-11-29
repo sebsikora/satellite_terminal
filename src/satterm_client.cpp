@@ -126,7 +126,7 @@ std::vector<std::string> SatTerm_Client::ParseFifoPaths(size_t argv_start_index,
 	return paths_container;
 }
 
-void SatTerm_Client::Configure() {
+void SatTerm_Client::Configure(void) {
 	unsigned long timeout_seconds = 5;
 	bool success = OpenFifos(timeout_seconds);
 

@@ -1,12 +1,11 @@
-#include <unistd.h>					// sleep().
-#include <ctime>
-
-#include <iostream>
-#include <string>
+#include <unistd.h>					// sleep(), usleep().
+#include <ctime>                    // time().
+#include <iostream>                 // std::cout, std::endl.
+#include <string>                   // std::string.
 
 #include "satellite_terminal.h"
 
-int main () {
+int main (void) {
 	
 	SatTerm_Server sts("test_server", "./client_demo");
 	
@@ -30,12 +29,12 @@ int main () {
 		if (sts.GetErrorCode().err_no != 0) {
 			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
 		}
-		sleep(10);
+		
 	} else {
 		if (sts.GetErrorCode().err_no != 0) {
 			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
 		}
-		sleep(10);
+		sleep(5);
 	}
 	return 0;
 }

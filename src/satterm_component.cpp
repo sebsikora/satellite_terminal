@@ -36,7 +36,7 @@
 
 // Class member function definitions for abstract base Component class.
 
-bool SatTerm_Component::IsConnected() {
+bool SatTerm_Component::IsConnected(void) {
 	return m_connected;
 }
 
@@ -283,10 +283,10 @@ size_t SatTerm_Component::GetRxFifoCount(void) {
 	return m_rx_fifo_descriptors.size();
 }
 
-error_descriptor SatTerm_Component::GetErrorCode() {
+error_descriptor SatTerm_Component::GetErrorCode(void) {
 	return m_error_code;
 }
 
-std::string SatTerm_Component::GetStopMessage() {
+std::string SatTerm_Component::GetStopMessage(void) {
 	return m_stop_message;
 }

@@ -113,7 +113,10 @@ Blah.
 <br />
 <br />
 
-## Worked example
+## Complete basic example
+
+Blah...
+<br />
 
 ```cpp
 // server_demo.cpp
@@ -161,6 +164,9 @@ int main (void) {
 ```
 <br />
 
+Blah...
+<br />
+
 ```cpp
 // client_demo.cpp
 
@@ -200,6 +206,51 @@ int main(int argc, char *argv[]) {
 	}
 	return 0;
 }
+```
+<br />
+
+Compile and run:
+<br />
+
+```
+user@home:~/Documents/cpp_projects/satellite_terminal$ ./server_demo 
+Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal
+Client process started.
+Server test_server opened fifo test_server_fifo_cs_0 for reading on descriptor 3
+Server test_server opened fifo test_server_fifo_sc_0 for writing on descriptor 4
+Server test_server initialised successfully.
+Message "Message number 0 from server." returned by client.
+Message "Message number 1 from server." returned by client.
+Message "Message number 2 from server." returned by client.
+Message "Message number 3 from server." returned by client.
+Message "Message number 4 from server." returned by client.
+Message "Message number 5 from server." returned by client.
+Message "Message number 6 from server." returned by client.
+Message "Message number 7 from server." returned by client.
+Message "Message number 8 from server." returned by client.
+Message "Message number 9 from server." returned by client.
+Waiting for client process to terminate...
+EOF on read() to fifo index 0 suggests counterpart terminated.
+user@home:~/Documents/cpp_projects/satellite_terminal$
+```
+<br />
+
+```
+Fifo working path is /home/sebsikora/Documents/cpp_projects/satellite_terminal/
+Client test_client opened fifo test_server_fifo_cs_0 for writing on descriptor 3
+Client test_client opened fifo test_server_fifo_sc_0 for reading on descriptor 4
+Client test_client initialised successfully.
+Message number 0 from server.
+Message number 1 from server.
+Message number 2 from server.
+Message number 3 from server.
+Message number 4 from server.
+Message number 5 from server.
+Message number 6 from server.
+Message number 7 from server.
+Message number 8 from server.
+Message number 9 from server.
+q
 ```
 <br />
 

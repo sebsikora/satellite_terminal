@@ -67,7 +67,7 @@ The server constructor will return once the communication channel is established
 
 The paths to the named pipes are passed to the child process via it's command-line arguments, therefore a pointer to argv must be passed to the SatTerm_Client constructor.
 
-The pipe path data is appended directly onto the child binary path string passed to the server constructor, so you can parse any arguments required by the child process as normal as long as argv is not modified. The client constructor will automatically parse the remaining arguments.
+The pipe path data is appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and client constructor will automatically parse the remaining arguments.
 <br />
 
 ```cpp
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 	// -- Your argument parser goes here ---
 	//       -- Don't modify argv! --
 	
-	SatTerm_Client stc("test_client", argv);
+	SatTerm_Client stc("test_client", argc, argv);
 	
 	if (stc.IsConnected()) {
 		// We are good to go!
@@ -87,6 +87,9 @@ int main(int argc, char *argv[]) {
 	}
 ...
 ```
+<br />
+
+
 <br />
 
 Blah [blah]() `blah.cpp`.

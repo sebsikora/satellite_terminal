@@ -137,7 +137,7 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	int status = 0;
 	
 	for (size_t tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
-		std::string fifo_path = "./" + m_identifier + "_fifo_sc_" + std::to_string(tx_fifo_index);
+		std::string fifo_path = m_identifier + "_fifo_sc_" + std::to_string(tx_fifo_index);
 		remove(fifo_path.c_str());	// If temporary file already exists, delete it.
 		m_tx_fifo_paths.emplace_back(fifo_path);
 		
@@ -156,7 +156,7 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	
 	if (success) {
 		for (size_t rx_fifo_index = 0; rx_fifo_index < rx_fifo_count; rx_fifo_index ++) {
-			std::string fifo_path = "./" + m_identifier + "_fifo_cs_" + std::to_string(rx_fifo_index);
+			std::string fifo_path = m_identifier + "_fifo_cs_" + std::to_string(rx_fifo_index);
 			remove(fifo_path.c_str());	// If temporary file already exists, delete it.
 			m_rx_fifo_paths.emplace_back(fifo_path);
 			
@@ -179,41 +179,61 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths) {
 	m_error_code = {0, ""};
 	
+	bool success = true;
+	char working_path[FILENAME_MAX + 1];
+	char* retval = getcwd(working_path, FILENAME_MAX + 1);
+	if (retval == NULL) {
+		m_error_code = {errno, "getcwd()"};
+		if (m_display_messages) {
+			perror("getcwd() unable to obtain current working path.");
+		}
+		success = false;
+	} else {
+		if (m_display_messages) {
+			std::cout << "Fifo working path is " << std::string(working_path) << std::endl;
+		}
+	}
+	
 	std::vector<std::string> terminal_emulator_paths = LoadTerminalEmulatorPaths(path_to_terminal_emulator_paths);
 	
 	pid_t process;
-	if (terminal_emulator_paths.size() > 0) {
-		process = fork();
-		if (process < 0) {
-			m_error_code = {errno, "fork()"};
-			if (m_display_messages) {
-				perror("fork() to start client process failed."); // fork() failed.
-			}
-			return process;
-		}
-		
-		if (process == 0) {
-			// We are in the child process!
-			std::string arg_string = m_path_to_client_binary;
-			arg_string += " client_argstart";
-			arg_string += " " + std::to_string(m_rx_fifo_paths.size());
-			arg_string += " " + std::to_string(m_tx_fifo_paths.size());
-			for (const auto& fifo_path : m_rx_fifo_paths) {
-				arg_string += " " + fifo_path;
-			}
-			for (const auto& fifo_path : m_tx_fifo_paths) {
-				arg_string += " " + fifo_path;
+	if (success) {
+		if (terminal_emulator_paths.size() > 0) {
+			process = fork();
+			if (process < 0) {
+				m_error_code = {errno, "fork()"};
+				if (m_display_messages) {
+					perror("fork() to start client process failed."); // fork() failed.
+				}
+				return process;
 			}
 			
-			for (const auto terminal_path : terminal_emulator_paths) {
-				// No need to check execv() return value. If it returns, you know it failed.
-				execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);
+			if (process == 0) {
+				// We are in the child process!
+				std::string arg_string = m_path_to_client_binary;
+				arg_string += " client_args";
+				arg_string += " " + std::string(working_path) + "/";
+				arg_string += " " + std::to_string(m_rx_fifo_paths.size());
+				arg_string += " " + std::to_string(m_tx_fifo_paths.size());
+				for (const auto& fifo_path : m_rx_fifo_paths) {
+					arg_string += " " + fifo_path;
+				}
+				for (const auto& fifo_path : m_tx_fifo_paths) {
+					arg_string += " " + fifo_path;
+				}
+				
+				for (const auto terminal_path : terminal_emulator_paths) {
+					// No need to check execv() return value. If it returns, you know it failed.
+					execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);
+				}
+				if (m_display_messages) {
+					std::string error_string = "Client process execl() failed to start client binary. Check terminal_emulator_paths.txt";
+					perror(error_string.c_str());
+				}
+				std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
+				return -1;
 			}
-			if (m_display_messages) {
-				std::string error_string = "Client process execl() failed to start client binary. Check terminal_emulator_paths.txt";
-				perror(error_string.c_str());
-			}
-			std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
+		} else {
 			return -1;
 		}
 	} else {

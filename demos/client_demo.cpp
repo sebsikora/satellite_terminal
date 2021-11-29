@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[]) {
 	
-	SatTerm_Client stc("test_client", argv);
+	SatTerm_Client stc("test_client", argc, argv);
 
 	if (stc.IsConnected()) {
 		while (stc.GetErrorCode().err_no == 0) {

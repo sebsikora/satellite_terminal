@@ -65,7 +65,7 @@ The server constructor will return once the communication channel is established
 
 ### Child process
 
-The paths to the named pipes are passed to the child process via it's command-line arguments, therefore a pointer to argv must be passed to the SatTerm_Client constructor.
+The paths to the named pipes are passed to the child process via it's command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
 
 The pipe path data is appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and client constructor will automatically parse the remaining arguments.
 <br />
@@ -77,7 +77,7 @@ The pipe path data is appended directly onto the child binary path string passed
 int main(int argc, char *argv[]) {
 	
 	// -- Your argument parser goes here ---
-	//       -- Don't modify argv! --
+	//      -- Don't modify argc/v! --
 	
 	SatTerm_Client stc("test_client", argc, argv);
 	
@@ -89,7 +89,13 @@ int main(int argc, char *argv[]) {
 ```
 <br />
 
+The client constructor will return once the communication channel is established with the parent process, an error occurs or a timeout is reached. When it returns, if the client's `IsConnected()` member function returns `true`,the bi-directional communication channel was established without error.
+<br />
+<br />
 
+### Sending and receiving
+
+Blah...
 <br />
 
 Blah [blah]() `blah.cpp`.

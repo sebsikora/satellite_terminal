@@ -30,6 +30,7 @@ satellite_terminal is a simple library that makes it easy to incorporate this fu
 
 Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a trivial example.
 <br />
+<br />
 
 ### Parent process
 

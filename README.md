@@ -98,6 +98,15 @@ The client constructor will return once the communication channel is established
 Blah...
 <br />
 
+```cpp
+
+size_t sent_bytes = stc.SendMessage("Outbound message");
+
+std::string inbound_message = stc.GetMessage();
+
+```
+<br />
+
 Blah [blah]() `blah.cpp`.
 
 Blah.

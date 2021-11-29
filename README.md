@@ -14,7 +14,7 @@ Updated 29/11/2021.
 <br />
 <br />
 
-What is it?
+## What is it?
 -------------------------
 When developing a C++ project on for POSIX compatible operting systems (eg GNU/Linux), you may wish to run one or more additional child processes each with access to their own terminal emulator instance, and the ability to communicate bi-directionally with the parent process.
 
@@ -26,18 +26,21 @@ satellite_terminal is a simple library that makes it easy to incorporate this fu
 <br />
 <br />
 
-How to use it?
+## How to use it?
 -------------------------
 Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a trivial example.
 <br />
 
-The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string, the path to the child process binary as arguments. By default two named pipes will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
+### Parent process
+
+The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string and the path to the child process binary as arguments. By default two named pipes will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
 <br />
 
 ```cpp
+// parent.cpp
 ...
 
-SatTerm_Server sts("test_server", "./client_demo");
+SatTerm_Server sts("test_server", "./child_binary");
 
 // Path to child binary above can incorporate desired command-line arguments
 // eg: "./client_demo --full-screen=true"
@@ -52,20 +55,27 @@ if (sts.IsConnected()) {
 
 The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string.
 
-The server constructor will then block while it waits for the child process to connect, or timeout. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
+The server constructor will return once the communication channel is established with the child process, an error occurs or a timeout is reached. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
 <br />
 <br />
 
-Blah...
+### Child process
+
+The paths to the named pipes are passed to the child binary via it's command-line arguments. The child binary instantiates a SatTerm_Client, passing the pointer to argv as a constructor argument along with an index to the first argument (indexed starting at 1). If the path to the child binary passed to the server constructor incorporates existing command-line arguments, this index needs to be increased to reflect this.
 <br />
 
 ```cpp
+// child.cpp
 
 int main(int argc, char *argv[]) {
 	
-	size_t argv_start_index = 1;
+	// -- Your argument parser goes here ---
+	
+	size_t argv_start_index = 1;    // No other arguments in this case
+	                                // so start at index 1
+	
 	SatTerm_Client stc("test_client", argv_start_index, argv);
-
+	
 	if (stc.IsConnected()) {
 		// We are good to go!
 	}
@@ -79,7 +89,7 @@ Blah [blah]() `blah.cpp`.
 Blah.
 <br />
 
-License:
+## License:
 -------------------------
 ![Mit License Logo](./220px-MIT_logo.png)
 <br/>

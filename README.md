@@ -27,7 +27,7 @@ satellite_terminal is a simple library that makes it easy to incorporate this fu
 <br />
 
 ## How to use it?
--------------------------
+
 Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a trivial example.
 <br />
 
@@ -90,7 +90,7 @@ Blah.
 <br />
 
 ## License:
--------------------------
+
 ![Mit License Logo](./220px-MIT_logo.png)
 <br/>
 <br/>

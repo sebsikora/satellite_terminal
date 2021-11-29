@@ -31,11 +31,11 @@ How to use it?
 Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a trivial example.
 <br />
 
-The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string, the path to the child process binary, and a boolean flag to display messages as arguments. By default two named pipes will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
+The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string, the path to the child process binary as arguments. By default two named pipes will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
 
 ```cpp
 
-SatTerm_Server sts("test_server", "./client_demo", true);
+SatTerm_Server sts("test_server", "./client_demo");
 
 // Path to child binary above can incorporate desired command-line arguments
 // eg: "./client_demo --full-screen=true"

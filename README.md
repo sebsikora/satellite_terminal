@@ -241,7 +241,7 @@ Output in child terminal emulator instance:
 <br />
 
 ```
-Fifo working path is /home/sebsikora/Documents/cpp_projects/satellite_terminal/
+Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal/
 Client test_client opened fifo test_server_fifo_cs_0 for writing on descriptor 3
 Client test_client opened fifo test_server_fifo_sc_0 for reading on descriptor 4
 Client test_client initialised successfully.

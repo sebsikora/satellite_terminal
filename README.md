@@ -213,6 +213,8 @@ Compile and run:
 <br />
 
 ```
+user@home:~/Documents/cpp_projects/satellite_terminal$ g++ -Wall -g -O3 -I src/ src/satterm_client.cpp src/satterm_server.cpp src/satterm_component.cpp demos/server_demo.cpp -o server_demo
+user@home:~/Documents/cpp_projects/satellite_terminal$ g++ -Wall -g -O3 -I src/ src/satterm_client.cpp src/satterm_server.cpp src/satterm_component.cpp demos/client_demo.cpp -o client_demo
 user@home:~/Documents/cpp_projects/satellite_terminal$ ./server_demo 
 Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal
 Client process started.

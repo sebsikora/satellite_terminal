@@ -45,9 +45,22 @@ SatTerm_Server sts("test_server", "./client_demo");
 ```
 <br />
 
-The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string. The server constructor will then wait for the child process to connect.
+The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option.
 
+The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string. The server constructor will then block while it waits for the child process to connect.
 
+Blah...
+<br />
+<br />
+
+```cpp
+
+int main(int argc, char *argv[]) {
+	
+	size_t argv_start_index = 1;
+	SatTerm_Client stc("test_client", argv_start_index, argv);
+
+```
 <br />
 
 Blah [blah]() `blah.cpp`.

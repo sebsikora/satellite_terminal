@@ -54,6 +54,7 @@ The server constructor will create the named pipe temporary files in the local d
 
 The server constructor will then block while it waits for the child process to connect, or timeout. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
 <br />
+<br />
 
 Blah...
 <br />

@@ -20,20 +20,30 @@ When developing a C++ project on for POSIX compatible operting systems (eg GNU/L
 
 For instance, in the simplest case if the parent process occupies it's terminal emulator instance with it's own output, you may wish to spawn a child process with it's own terminal emulator instance to display messages from the parent process and receive user input to send back.
 
-This can be implemented within a C or C++ project on compatible operting systems using the functionality defined in the [unistd.h](https://en.wikipedia.org/wiki/Unistd.h), [sys/stat.h](https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h) & [fcntl.h](https://pubs.opengroup.org/onlinepubs/007904875/basedefs/fcntl.h.html) headers to spawn a child process, and create [named pipes](https://en.wikipedia.org/wiki/Named_pipe) that provide a communication channel available to the parent and child processes.
+This can be implemented within a C or C++ project on compatible operting systems using the functionality defined in the [unistd.h](https://en.wikipedia.org/wiki/Unistd.h), [sys/stat.h](https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h) & [fcntl.h](https://pubs.opengroup.org/onlinepubs/007904875/basedefs/fcntl.h.html) headers to spawn a child process, and create [named pipes](https://en.wikipedia.org/wiki/Named_pipe) that provide a communication channel to-which and from-which the parent and child processes can write and read.
 
 satellite_terminal is a simple library that makes it easy to incorporate this functionality within your own C++ projects by fully automating this process.
 <br />
 
 How to use it?
 -------------------------
-
+Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a trivial example.
 <br />
+
+The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string, the path to the child process binary, and a boolean flag to display messages as arguments. By default two named piped will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
 
 ```cpp
-// blah...
+
+SatTerm_Server sts("test_server", "./client_demo", true);
+
+// Path to child binary above can incorporate desired command-line arguments eg: "./client_demo --full-screen=true"
+
 ```
 <br />
+
+The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string. The server constructor will then wait for the child process to connect.
+
+
 <br />
 
 Blah [blah]() `blah.cpp`.

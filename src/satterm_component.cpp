@@ -286,3 +286,7 @@ size_t SatTerm_Component::GetRxFifoCount(void) {
 error_descriptor SatTerm_Component::GetErrorCode() {
 	return m_error_code;
 }
+
+std::string SatTerm_Component::GetStopMessage() {
+	return m_stop_message;
+}

@@ -40,7 +40,7 @@
 
 // Class constructor and member function definitions for derived Server class.
 
-SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count) {
+SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count, char end_char, std::string const& stop_message) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	
@@ -53,7 +53,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_path_to_client_binary = path_to_client_binary;
 	m_end_char = end_char;
 	m_stop_fifo_index = stop_fifo_index;
-	m_stop_signal = stop_signal;
+	m_stop_message = stop_message;
 	
 	bool success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
@@ -100,7 +100,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 
 SatTerm_Server::~SatTerm_Server() {
 	if (IsConnected()) {
-		SendMessage(m_stop_signal, m_stop_fifo_index);
+		SendMessage(m_stop_message, m_stop_fifo_index);
 		if (m_display_messages) {
 			std::cout << "Waiting for client process to terminate..." << std::endl;
 		}

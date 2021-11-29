@@ -8,7 +8,7 @@
 
 int main () {
 	
-	SatTerm_Server sts("test_server", "./client_demo", '\n', "q\n", true);
+	SatTerm_Server sts("test_server", "./client_demo", true);
 	
 	if (sts.IsConnected()) {
 		size_t message_count = 10;

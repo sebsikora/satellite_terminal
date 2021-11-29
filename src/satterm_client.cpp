@@ -34,7 +34,7 @@
 // Class constructors and member function definitions for derived Client class.
 
 // Create a client by directly specifying rx and tx fifo paths.
-SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages) {
+SatTerm_Client::SatTerm_Client(std::string const& identifier, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages, char end_char, std::string const& stop_message) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	
@@ -45,6 +45,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
                                  // before/if writing again.
 	m_component_type = "Client";
 	m_end_char = end_char;
+	m_stop_message = stop_message;
 	m_rx_fifo_paths = rx_fifo_paths;
 	m_tx_fifo_paths = tx_fifo_paths;
 
@@ -52,7 +53,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, std
 }
 
 // Construct a client by parsing argv from the stipulated argument index (inclusive).
-SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages) {
+SatTerm_Client::SatTerm_Client(std::string const& identifier, size_t argv_start_index, char* argv[], bool display_messages, char end_char, std::string const& stop_message) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	
@@ -63,6 +64,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, char end_char, siz
                                  // before/if writing again.
 	m_component_type = "Client";
 	m_end_char = end_char;
+	m_stop_message = stop_message;
 
 	size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index]));
 	size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 1]));

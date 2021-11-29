@@ -53,7 +53,8 @@ class SatTerm_Component {
 		size_t GetTxFifoCount(void);
 		size_t GetRxFifoCount(void);
 		error_descriptor GetErrorCode(void);
-
+		std::string GetStopMessage(void);
+		
 	protected:
 		bool OpenRxFifos(unsigned long timeout_seconds);
 		bool OpenTxFifos(unsigned long timeout_seconds);
@@ -62,6 +63,7 @@ class SatTerm_Component {
 		std::string m_component_type = "";
 		std::string m_identifier = "";
 		char m_end_char = 0;
+		std::string m_stop_message = "";
 		std::vector<int> m_tx_fifo_descriptors = {};
 		std::vector<int> m_rx_fifo_descriptors = {};
 		std::vector<std::string> m_rx_fifo_paths = {};
@@ -78,8 +80,8 @@ class SatTerm_Component {
 // Server derived class.
 class SatTerm_Server : public SatTerm_Component {
 	public:
-		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, char end_char, std::string const& stop_signal,
-						bool display_messages = false, size_t stop_fifo_index = 0, size_t sc_fifo_count = 1, size_t cs_fifo_count = 1);
+		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = false, size_t stop_fifo_index = 0,
+		               size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = '\n', std::string const& stop_message = "q");
 		~SatTerm_Server();
 		
 	private:
@@ -90,14 +92,13 @@ class SatTerm_Server : public SatTerm_Component {
 		
 		std::string m_path_to_client_binary = "";
 		int m_stop_fifo_index = 0;
-		std::string m_stop_signal = "";
 };
 
 // Client derived class.
 class SatTerm_Client : public SatTerm_Component {
 	public:
-		SatTerm_Client(std::string const& identifier, char end_char, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = false);
-		SatTerm_Client(std::string const& identifier, char end_char, size_t argv_start_index, char* argv[], bool display_messages = false);
+		SatTerm_Client(std::string const& identifier, std::vector<std::string> rx_fifo_paths, std::vector<std::string> tx_fifo_paths, bool display_messages = false, char end_char = '\n', std::string const& stop_message = "q");
+		SatTerm_Client(std::string const& identifier, size_t argv_start_index, char* argv[], bool display_messages = false, char end_char = '\n', std::string const& stop_message = "q");
 		~SatTerm_Client();
 		
 	private:

@@ -60,7 +60,7 @@ if (sts.IsConnected()) {
 ```
 <br />
 
-The server constructor will create the named pipe temporary files in the local directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes are passed to the child binary as command-line options by appending them to the child binary path string.
+The server constructor will create the named pipe temporary files in the working directory and then spawn a terminal emulator (from the list in terminal_emulator_paths.txt) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes and all other required parameters are automatically passed to the child process as command-line options.
 
 The server constructor will return once the communication channel is established with the child process, an error occurs or a timeout is reached. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
 <br />
@@ -68,9 +68,9 @@ The server constructor will return once the communication channel is established
 
 ### Child process
 
-The paths to the named pipes are passed to the child process via it's command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
+Client parameters are passed to the child process via it's command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
 
-The pipe path data is appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and client constructor will automatically parse the remaining arguments.
+The parameters are appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and client constructor will automatically parse the remaining arguments.
 <br />
 
 ```cpp
@@ -102,8 +102,16 @@ Blah...
 <br />
 
 ```cpp
+// SendMessage() function prototype in satellite_terminal.h:
+//
+// std::string SendMessage(std::string const& message, size_t tx_fifo_index = 0, unsigned long timeout_seconds = 10);
 
-size_t sent_bytes = stc.SendMessage("Outbound message");
+std::string message_unsent = stc.SendMessage("Outbound message");
+
+
+// GetMessage() function prototype in satellite_terminal.h:
+//
+// std::string GetMessage(size_t rx_fifo_index = 0, bool capture_end_char = false, unsigned long timeout_seconds = 0);
 
 std::string inbound_message = stc.GetMessage();
 

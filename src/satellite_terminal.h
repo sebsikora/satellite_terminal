@@ -83,16 +83,18 @@ class SatTerm_Component {
 // Server derived class.
 class SatTerm_Server : public SatTerm_Component {
 	public:
-		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true, size_t stop_fifo_index = 0,
+		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true,
+		               std::string const& terminal_emulator_paths = "./terminal_emulator_paths.txt", size_t stop_fifo_index = 0,
 		               size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = 3, std::string const& stop_message = "q");
 		~SatTerm_Server();
 		
 	private:
-		std::vector<std::string> LoadTerminalEmulatorPaths(std::string const& file_path);
-		pid_t StartClient(std::string const& path_to_terminal_emulator_paths);
-		bool CreateFifos(size_t sc_fifo_count, size_t cs_fifo_count);
-		bool OpenFifos(unsigned long timeout_seconds);
 		std::string GetWorkingPath(void);
+		bool CreateFifos(size_t sc_fifo_count, size_t cs_fifo_count);
+		std::vector<std::string> __CreateFifos(size_t fifo_count, std::string const& fifo_identifier_prefix);
+		pid_t StartClient(std::string const& path_to_terminal_emulator_paths);
+		std::vector<std::string> LoadTerminalEmulatorPaths(std::string const& file_path);
+		bool OpenFifos(unsigned long timeout_seconds);
 		
 		std::string m_path_to_client_binary = "";
 };
@@ -104,7 +106,7 @@ class SatTerm_Client : public SatTerm_Component {
 		~SatTerm_Client();
 		
 	private:
-		size_t ParseVarargs(int argc, char* argv[]);
+		size_t GetArgStartIndex(int argc, char* argv[]);
 		std::vector<std::string> ParseFifoPaths(size_t argv_start_index, size_t argv_count, char* argv[]);
 		bool OpenFifos(unsigned long timeout_seconds);
 };

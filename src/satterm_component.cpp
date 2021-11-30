@@ -50,8 +50,8 @@ bool SatTerm_Component::OpenRxFifos(unsigned long timeout_seconds) {
 		int fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK);
 		
 		if (!(fifo < 0)) {
-			m_rx_fifo_descriptors.emplace_back(fifo);
-			m_current_messages.emplace_back("");
+			m_rx_fifo_descriptors.emplace_back(fifo);    // GetMessage() expects fifo index into m_rx_fifo_descriptors, so we'll add it speculatively
+			m_current_messages.emplace_back("");         // prior to checking for the 'init' message from the server.
 			
 			std::string init_message = GetMessage(rx_fifo_index, false, timeout_seconds);
 			
@@ -63,6 +63,7 @@ bool SatTerm_Component::OpenRxFifos(unsigned long timeout_seconds) {
 				}
 			} else {
 				m_rx_fifo_descriptors.pop_back();    // Failed to receive 'init' message so do not store descriptor.
+				m_current_messages.pop_back();
 				
 				if (m_error_code == error_descriptor{-1, "GetMessage()_tx_unconn_timeout"}) {
 					if (m_display_messages) {
@@ -104,7 +105,7 @@ bool SatTerm_Component::OpenTxFifos(unsigned long timeout_seconds) {
 				std::cerr << message << std::endl;
 			}
 			
-			m_tx_fifo_descriptors.emplace_back(fifo);
+			m_tx_fifo_descriptors.emplace_back(fifo);    // SendMessage() expects fifo index into m_rx_fifo_descriptors, so we'll add it speculatively.
 			
 			std::string init_message = "init";
 			init_message = SendMessage(init_message, fifo_index);
@@ -160,7 +161,7 @@ std::string SatTerm_Component::GetMessage(size_t rx_fifo_index, bool capture_end
 	std::string message;
 
 	if (rx_fifo_index >= m_rx_fifo_descriptors.size()) {
-		m_error_code = {-1, "rx_fifo_index_OOR"};
+		m_error_code = {-1, "GetMessage()_fifo_index_OOR"};
 		if (m_display_messages) {
 			std::string error_message = "RX fifo index " + std::to_string(rx_fifo_index) + " Out Of Range.";
 			std::cerr << error_message << std::endl;
@@ -254,7 +255,7 @@ size_t SatTerm_Component::SendBytes(const char* bytes, size_t byte_count, size_t
 	size_t bytes_remaining = byte_count;
 	
 	if (tx_fifo_index >= m_tx_fifo_descriptors.size()) {
-		m_error_code = {-1, "tx_fifo_index_OOR"};
+		m_error_code = {-1, "SendBytes()_fifo_index_OOR"};
 		if (m_display_messages) {
 			std::string error_message = "TX fifo index " + std::to_string(tx_fifo_index) + " Out Of Range.";
 			std::cerr << error_message << std::endl;
@@ -278,7 +279,7 @@ size_t SatTerm_Component::SendBytes(const char* bytes, size_t byte_count, size_t
 				bytes_remaining -= (size_t)(status);
 			} else {
 				switch (errno) {
-					case EAGAIN:                    // Erro - thread would block (buffer full, etc). Try again unless timeout.
+					case EAGAIN:                    // Erro - thread would block (reader currently reading, etc). Try again unless timeout.
 						finished = ((time(0) - start_time) > timeout_seconds);
 						if ((finished) && (timeout_seconds == 0)) {
 							m_error_code = {errno, "write()_thread_block"};

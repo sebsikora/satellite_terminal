@@ -35,12 +35,15 @@
 #include <iostream>                   // std::cout, std::cerr, std::endl.
 #include <fstream>                    // std::ifstream.
 #include <cstdio>                     // remove().
+#include <stdexcept>                  // 
 
 #include "satellite_terminal.h"
 
 // Class constructor and member function definitions for derived Server class.
 
-SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count, char end_char, std::string const& stop_message) {
+SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages,
+                               std::string const& terminal_emulator_paths, size_t stop_fifo_index, size_t tx_fifo_count, size_t rx_fifo_count,
+                               char end_char, std::string const& stop_message) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	
@@ -70,7 +73,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {
-		if (StartClient("./terminal_emulator_paths.txt") < 0) {
+		if (StartClient(terminal_emulator_paths) < 0) {
 			m_error_code = {1, "fork()"};
 			if (m_display_messages) {
 				std::string message = "Unable to start client process.";
@@ -168,49 +171,43 @@ std::string SatTerm_Server::GetWorkingPath(void) {
 
 bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	m_error_code = {0, ""};
-	bool success = true;
-	int status = 0;		
+	bool success = false;
 	
-	for (size_t tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
-		std::string fifo_path = m_identifier + "_fifo_sc_" + std::to_string(tx_fifo_index);
-		remove(fifo_path.c_str());	// If temporary file already exists, delete it.
+	m_tx_fifo_paths = __CreateFifos(tx_fifo_count, m_identifier + "_fifo_sc_");
+	if (m_error_code.err_no == 0) {
+		m_rx_fifo_paths = __CreateFifos(rx_fifo_count, m_identifier + "_fifo_cs_");
+		if (m_error_code.err_no == 0) {
+			success = true;
+		} else {
+			success = false;
+		}
+	} else {
+		success = false;
+	}
+	return success;
+}
+
+std::vector<std::string> SatTerm_Server::__CreateFifos(size_t fifo_count, std::string const& fifo_identifier_prefix) {
+	m_error_code = {0, ""};
+	std::vector<std::string> fifo_identifiers = {};
+	for (size_t fifo_index = 0; fifo_index < fifo_count; fifo_index ++) {
+		std::string fifo_identifier = fifo_identifier_prefix + std::to_string(fifo_index);
+		remove(fifo_identifier.c_str());	// If temporary file already exists, delete it.
 		
-		status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
+		int status = mkfifo(fifo_identifier.c_str(), S_IFIFO|0666);
 		
 		if (status < 0) {
 			m_error_code = {errno, "mkfifo()"};
 			if (m_display_messages) {
-				std::string error_message = "Unable to open fifo at path " + fifo_path;
+				std::string error_message = "Server mkfifo() error trying to open fifo at path " + m_working_path + fifo_identifier;
 				perror(error_message.c_str());
 			}
-			success = false;
 			break;
 		} else {
-			m_tx_fifo_paths.emplace_back(fifo_path);
+			fifo_identifiers.emplace_back(fifo_identifier);
 		}
 	}
-	
-	if (success) {
-		for (size_t rx_fifo_index = 0; rx_fifo_index < rx_fifo_count; rx_fifo_index ++) {
-			std::string fifo_path = m_identifier + "_fifo_cs_" + std::to_string(rx_fifo_index);
-			remove(fifo_path.c_str());	// If temporary file already exists, delete it.
-			
-			status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
-			
-			if (status < 0) {
-				m_error_code = {errno, "mkfifo()"};
-				if (m_display_messages) {
-					std::string error_message = "Unable to open fifo at path " + fifo_path;
-					perror(error_message.c_str());
-				}
-				success = false;
-				break;
-			} else {
-				m_rx_fifo_paths.emplace_back(fifo_path);
-			}
-		}
-	}
-	return success;
+	return fifo_identifiers;
 }
 
 pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths) {
@@ -269,16 +266,6 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
     return process;
 }
 
-bool SatTerm_Server::OpenFifos(unsigned long timeout_seconds) {
-	bool success = false;
-	success = OpenRxFifos(timeout_seconds);
-
-	if (success) {		// Only attempt to open fifos for writing if we were able to open the fifos for reading.
-		success = OpenTxFifos(timeout_seconds);
-	}
-	return success;
-}
-
 std::vector<std::string> SatTerm_Server::LoadTerminalEmulatorPaths(std::string const& file_path) {
 	m_error_code = {0, ""};
 	
@@ -298,4 +285,14 @@ std::vector<std::string> SatTerm_Server::LoadTerminalEmulatorPaths(std::string c
 		}
 	}
 	return terminal_emulator_paths;
+}
+
+bool SatTerm_Server::OpenFifos(unsigned long timeout_seconds) {
+	bool success = false;
+	success = OpenRxFifos(timeout_seconds);
+
+	if (success) {		// Only attempt to open fifos for writing if we were able to open the fifos for reading.
+		success = OpenTxFifos(timeout_seconds);
+	}
+	return success;
 }

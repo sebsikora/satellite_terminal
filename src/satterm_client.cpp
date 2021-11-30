@@ -25,6 +25,7 @@
 #include <string>              // std::string.
 #include <vector>              // std::vector.
 #include <iostream>            // std::cout, std::cerr, std::endl.
+#include <stdexcept>           // std::out_of_range, std::invalid_argument.
 
 #include <signal.h>            // SIGPIPE, SIG_IGN.
 #include <unistd.h>            // write(), read(), close().
@@ -45,36 +46,61 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
                                  // before/if writing again.
 	m_component_type = "Client";
 	
-	size_t argv_start_index = ParseVarargs(argc, argv);
+	size_t argv_start_index = GetArgStartIndex(argc, argv);
 	
 	if (argv_start_index != 0) {
-		m_working_path = std::string(argv[argv_start_index]);
-		m_stop_fifo_index = std::stoi(std::string(argv[argv_start_index + 1]));
-		m_end_char = (char)(std::stoi(std::string(argv[argv_start_index + 2])));
-		m_stop_message = std::string(argv[argv_start_index + 3]);
-		size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index + 4]));
-		size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 5]));
-		m_tx_fifo_paths = ParseFifoPaths(argv_start_index + 6, tx_fifo_count, argv);
-		m_rx_fifo_paths = ParseFifoPaths(argv_start_index + 6 + tx_fifo_count, rx_fifo_count, argv);
-		
-		if (m_display_messages) {
-			std::string message = "Fifo working path is " + m_working_path;
-			std::cerr << message << std::endl;
+		// Parse argv - Parameters are sanity checked by server but we'll try and catch appropriate exceptions in case the args became garbled in transmission.
+		bool success = true;
+		try {
+			m_working_path = std::string(argv[argv_start_index]);
+			m_stop_fifo_index = std::stoi(std::string(argv[argv_start_index + 1]));
+			m_end_char = (char)(std::stoi(std::string(argv[argv_start_index + 2])));
+			m_stop_message = std::string(argv[argv_start_index + 3]);
+			size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index + 4]));
+			size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 5]));
+			m_tx_fifo_paths = ParseFifoPaths(argv_start_index + 6, tx_fifo_count, argv);
+			m_rx_fifo_paths = ParseFifoPaths(argv_start_index + 6 + tx_fifo_count, rx_fifo_count, argv);
+		}
+		catch (const std::invalid_argument& ia) {
+			success = false;
+			m_error_code = {-1, "invalid_argument"};
+			if (m_display_messages) {
+				std::string error_message = "An invalid command-line argument was passed to the client.";
+				std::cerr << error_message << std::endl;
+			}
+		}
+		catch (const std::out_of_range& oor) {
+			success = false;
+			m_error_code = {-1, "out_of_range_argument"};
+			if (m_display_messages) {
+				std::string error_message = "An out-of-range command-line argument was passed to the client.";
+				std::cerr << error_message << std::endl;
+			}
 		}
 		
-		unsigned long timeout_seconds = 5;
-		bool success = OpenFifos(timeout_seconds);
 		if (success) {
 			if (m_display_messages) {
-				std::string message = "Client " + m_identifier + " initialised successfully.";
+				std::string message = "Fifo working path is " + m_working_path;
 				std::cerr << message << std::endl;
 			}
-			m_connected = true;
+			
+			unsigned long timeout_seconds = 5;
+			success = OpenFifos(timeout_seconds);
+			if (success) {
+				if (m_display_messages) {
+					std::string message = "Client " + m_identifier + " initialised successfully.";
+					std::cerr << message << std::endl;
+				}
+				m_connected = true;
+			} else {
+				// m_error_code already set in OpenFifos().
+				if (m_display_messages) {
+					std::string error_message = "Client " + m_identifier + " unable to intialise connection.";
+					std::cerr << error_message << std::endl;
+				}
+				m_connected = false;
+			}
 		} else {
-			if (m_display_messages) {
-				std::string message = "Client " + m_identifier + " unable to intialise connection.";
-				std::cerr << message << std::endl;
-			}
 			m_connected = false;
 		}
 	} else {
@@ -96,7 +122,7 @@ SatTerm_Client::~SatTerm_Client() {
 	}
 }
 
-size_t SatTerm_Client::ParseVarargs(int argc, char* argv[]) {
+size_t SatTerm_Client::GetArgStartIndex(int argc, char* argv[]) {
 	size_t argument_index = 1;
 	bool failed = false;
 	while (std::string(argv[argument_index]) != "client_args") {

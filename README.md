@@ -227,10 +227,13 @@ Compile server_demo.cpp and client_demo.cpp, run server_demo:
 user@home:~/Documents/cpp_projects/satellite_terminal$ g++ -Wall -g -O3 -I src/ src/satterm_client.cpp src/satterm_server.cpp src/satterm_component.cpp demos/server_demo.cpp -o server_demo
 user@home:~/Documents/cpp_projects/satellite_terminal$ g++ -Wall -g -O3 -I src/ src/satterm_client.cpp src/satterm_server.cpp src/satterm_component.cpp demos/client_demo.cpp -o client_demo
 user@home:~/Documents/cpp_projects/satellite_terminal$ ./server_demo 
-Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal
+Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal/
 Client process started.
-Server test_server opened fifo test_server_fifo_cs_0 for reading on descriptor 3
-Server test_server opened fifo test_server_fifo_sc_0 for writing on descriptor 4
+Client process attempting to execute via terminal emulator '-e':
+./client_demo client_args /home/user/Documents/cpp_projects/satellite_terminal/ 0 3 q 1 1 test_server_fifo_cs_0 test_server_fifo_sc_0
+Trying /usr/bin/x-terminal-emulator
+Server test_server opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_cs_0 for reading on descriptor 3
+Server test_server opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_sc_0 for writing on descriptor 4
 Server test_server initialised successfully.
 Message "Message number 0 from server." returned by client.
 Message "Message number 1 from server." returned by client.
@@ -253,8 +256,8 @@ Output in child terminal emulator instance:
 
 ```
 Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal/
-Client test_client opened fifo test_server_fifo_cs_0 for writing on descriptor 3
-Client test_client opened fifo test_server_fifo_sc_0 for reading on descriptor 4
+Client test_client opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_cs_0 for writing on descriptor 3
+Client test_client opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_sc_0 for reading on descriptor 4
 Client test_client initialised successfully.
 Message number 0 from server.
 Message number 1 from server.

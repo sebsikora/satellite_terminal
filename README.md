@@ -60,7 +60,7 @@ if (sts.IsConnected()) {
 ```
 <br />
 
-The server constructor will create the named pipe temporary files in the working directory and then spawn a terminal emulator (from the list in `terminal_emulator_paths.txt`) within-which it will directly execute the child binary via the '-e' option. The paths to the named pipes and all other required parameters are automatically passed to the child process as command-line options.
+The server constructor will create the named pipe temporary files in the working directory and then spawn a terminal emulator (from the list in `terminal_emulator_paths.txt`) via-which it will directly execute the child binary via the '-e' option. The paths to the named pipes and all other required parameters are automatically passed to the child process as command-line options.
 
 The server constructor will return once the communication channel is established with the child process, an error occurs or a timeout is reached. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
 <br />

@@ -18,7 +18,7 @@ Updated 30/11/2021.
 
 satellite_terminal automates the process of launching a client process connected to it's own terminal emulator instance from within a parent process, linked with an arbitrary number of [named pipes](https://en.wikipedia.org/wiki/Named_pipe) to allow bidirectional interprocess communication.
 
-satellite_terminal leverages the functionality defined in the [unistd.h](https://en.wikipedia.org/wiki/Unistd.h), [sys/stat.h](https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h) & [fcntl.h](https://pubs.opengroup.org/onlinepubs/007904875/basedefs/fcntl.h.html) headers, and as-such will work only with [POSIX compatible](https://en.wikipedia.org/wiki/POSIX) operating systems and environments. satellite_terminal has to-date been compiled and tested on GNU/Linux.
+satellite_terminal leverages the functionality defined in the [unistd.h](https://en.wikipedia.org/wiki/Unistd.h), [sys/stat.h](https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h) & [fcntl.h](https://pubs.opengroup.org/onlinepubs/007904875/basedefs/fcntl.h.html) headers, and as-such will work only with [POSIX compatible](https://en.wikipedia.org/wiki/POSIX) operating systems and [environments](https://www.cygwin.com/). satellite_terminal has to-date been compiled and tested on GNU/Linux.
 
 satellite_terminal is easy to incorporate and use within your own projects, as the basic examples below will demonstrate.
 <br />
@@ -41,6 +41,11 @@ By default two named pipes will be created to form a tx-rx pair, but an arbitrar
 // parent.cpp
 #include "satellite_terminal.h"
 ...
+
+// Server constructor prototype in satellite_terminal.h:
+//
+// SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true, size_t stop_fifo_index = 0,
+//                size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = 3, std::string const& stop_message = "q");
 
 SatTerm_Server sts("test_server", "./child_binary");
 

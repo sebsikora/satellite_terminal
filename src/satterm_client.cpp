@@ -34,7 +34,7 @@
 // Class constructor and member function definitions for derived Client class.
 
 // Construct a client by parsing argv from the stipulated argument index (inclusive).
-SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* argv[], bool display_messages, char end_char) {
+SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* argv[], bool display_messages) {
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	
@@ -44,18 +44,18 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
                                  // After each write() call we need to check the return value and if -1 check for the EPIPE error code
                                  // before/if writing again.
 	m_component_type = "Client";
-	m_end_char = end_char;
 	
 	size_t argv_start_index = ParseVarargs(argc, argv);
 	
 	if (argv_start_index != 0) {
 		m_working_path = std::string(argv[argv_start_index]);
 		m_stop_fifo_index = std::stoi(std::string(argv[argv_start_index + 1]));
-		m_stop_message = std::string(argv[argv_start_index + 2]);
-		size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index + 3]));
-		size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 4]));
-		m_tx_fifo_paths = ParseFifoPaths(argv_start_index + 5, tx_fifo_count, argv);
-		m_rx_fifo_paths = ParseFifoPaths(argv_start_index + 5 + tx_fifo_count, rx_fifo_count, argv);
+		m_end_char = (char)(std::stoi(std::string(argv[argv_start_index + 2])));
+		m_stop_message = std::string(argv[argv_start_index + 3]);
+		size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index + 4]));
+		size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 5]));
+		m_tx_fifo_paths = ParseFifoPaths(argv_start_index + 6, tx_fifo_count, argv);
+		m_rx_fifo_paths = ParseFifoPaths(argv_start_index + 6 + tx_fifo_count, rx_fifo_count, argv);
 		
 		if (m_display_messages) {
 			std::string message = "Fifo working path is " + m_working_path;

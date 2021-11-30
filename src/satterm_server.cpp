@@ -60,7 +60,13 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	if (m_working_path != "") {
 		success = true;
 	}
-	
+
+	if (tx_fifo_count < 1) {    // At a minimum will create a single tx/rx pair.
+		tx_fifo_count = 1;
+	}
+	if (rx_fifo_count < 1) {
+		rx_fifo_count = 1;
+	}
 	success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {
@@ -228,6 +234,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 			arg_string += " client_args";    // Argument start delimiter.
 			arg_string += " " + m_working_path;
 			arg_string += " " + std::to_string(m_stop_fifo_index);
+			arg_string += " " + std::to_string((int)(m_end_char));
 			arg_string += " " + m_stop_message;
 			arg_string += " " + std::to_string(m_rx_fifo_paths.size());
 			arg_string += " " + std::to_string(m_tx_fifo_paths.size());

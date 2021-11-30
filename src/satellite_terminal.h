@@ -100,12 +100,11 @@ class SatTerm_Server : public SatTerm_Component {
 // Client derived class.
 class SatTerm_Client : public SatTerm_Component {
 	public:
-		SatTerm_Client(std::string const& identifier, int argc, char* argv[], bool display_messages = true, char end_char = 3);
+		SatTerm_Client(std::string const& identifier, int argc, char* argv[], bool display_messages = true);
 		~SatTerm_Client();
 		
 	private:
 		size_t ParseVarargs(int argc, char* argv[]);
 		std::vector<std::string> ParseFifoPaths(size_t argv_start_index, size_t argv_count, char* argv[]);
-		//~void Configure(void);
 		bool OpenFifos(unsigned long timeout_seconds);
 };

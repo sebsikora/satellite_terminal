@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
 ```
 <br />
 
-Compile `server_demo.cpp` and `client_demo.cpp`, run `server_demo`:
+Compile `server_demo.cpp` and `client_demo.cpp`, then execute `server_demo` from within the project directory:
 <br />
 
 ```

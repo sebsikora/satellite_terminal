@@ -70,7 +70,7 @@ The server constructor will return once the communication channel is established
 
 Client parameters are passed to the child process via it's command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
 
-The parameters are appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and client constructor will automatically parse the remaining arguments.
+The parameters are appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and the client constructor will automatically parse the remaining arguments.
 <br />
 
 ```cpp
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
 ```
 <br />
 
-Compile server_demo.cpp and client_demo.cpp, run server_demo:
+Compile `server_demo.cpp` and `client_demo.cpp`, run `server_demo`:
 <br />
 
 ```

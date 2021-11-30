@@ -132,9 +132,9 @@ Blah...
 ```cpp
 // server_demo.cpp
 
-#include <unistd.h>                 // sleep(), usleep().
+#include <unistd.h>					// sleep(), usleep().
 #include <ctime>                    // time().
-#include <iostream>                 // std::cout, std::endl.
+#include <iostream>                 // std::cout, std::cerr, std::endl.
 #include <string>                   // std::string.
 
 #include "satellite_terminal.h"
@@ -161,12 +161,12 @@ int main (void) {
 			usleep(1000);
 		}
 		if (sts.GetErrorCode().err_no != 0) {
-			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
 		}
 		
 	} else {
 		if (sts.GetErrorCode().err_no != 0) {
-			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
 		}
 		sleep(5);
 	}
@@ -181,9 +181,9 @@ Blah...
 ```cpp
 // client_demo.cpp
 
-#include <unistd.h>                 // sleep(), usleep().
+#include <unistd.h>					// sleep(), usleep().
 #include <ctime>                    // time().
-#include <iostream>                 // std::cout, std::endl.
+#include <iostream>                 // std::cout, std::cerr, std::endl.
 #include <string>                   // std::string.
 
 #include "satellite_terminal.h"
@@ -206,12 +206,12 @@ int main(int argc, char *argv[]) {
 			usleep(1000);
 		}
 		if (stc.GetErrorCode().err_no != 0) {
-			std::cout << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
+			std::cerr << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
 		}
 		sleep(5);
 	} else {
 		if (stc.GetErrorCode().err_no != 0) {
-			std::cout << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
+			std::cerr << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
 		}
 		sleep(5);
 	}

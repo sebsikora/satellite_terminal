@@ -44,9 +44,10 @@ By default two named pipes will be created to form a tx-rx pair, but an arbitrar
 
 // Server constructor prototype in satellite_terminal.h:
 //
-// SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true, size_t stop_fifo_index = 0,
+// SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true,
+//                std::string const& terminal_emulator_paths = "./terminal_emulator_paths.txt", size_t stop_fifo_index = 0,
 //                size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = 3, std::string const& stop_message = "q");
-
+//
 SatTerm_Server sts("test_server", "./child_binary");
 
 // Path to child binary above can incorporate desired command-line arguments

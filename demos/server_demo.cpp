@@ -1,6 +1,6 @@
 #include <unistd.h>					// sleep(), usleep().
 #include <ctime>                    // time().
-#include <iostream>                 // std::cout, std::endl.
+#include <iostream>                 // std::cout, std::cerr, std::endl.
 #include <string>                   // std::string.
 
 #include "satellite_terminal.h"
@@ -27,12 +27,12 @@ int main (void) {
 			usleep(1000);
 		}
 		if (sts.GetErrorCode().err_no != 0) {
-			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
 		}
 		
 	} else {
 		if (sts.GetErrorCode().err_no != 0) {
-			std::cout << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
+			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
 		}
 		sleep(5);
 	}

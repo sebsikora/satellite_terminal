@@ -47,13 +47,14 @@ class SatTerm_Component {
 		SatTerm_Component () {}				// Abstract base class constructor.
 		virtual ~SatTerm_Component () {}	// virtual destructor for abstract base class.
 		std::string GetMessage(size_t rx_fifo_index = 0, bool capture_end_char = false, unsigned long timeout_seconds = 0);
-		size_t SendMessage(std::string const& message, size_t tx_fifo_index = 0, unsigned long timeout_seconds = 10);
+		std::string SendMessage(std::string const& message, size_t tx_fifo_index = 0, unsigned long timeout_seconds = 10);
 		size_t SendBytes(const char* bytes, size_t byte_count, size_t tx_fifo_index = 0, unsigned long timeout_seconds = 10);
 		bool IsConnected(void);
 		size_t GetTxFifoCount(void);
 		size_t GetRxFifoCount(void);
 		error_descriptor GetErrorCode(void);
 		std::string GetStopMessage(void);
+		int GetStopFifoIndex(void);
 		
 	protected:
 		bool OpenRxFifos(unsigned long timeout_seconds);
@@ -63,9 +64,11 @@ class SatTerm_Component {
 		std::string m_component_type = "";
 		std::string m_identifier = "";
 		char m_end_char = 0;
+		int m_stop_fifo_index = 0;
 		std::string m_stop_message = "";
 		std::vector<int> m_tx_fifo_descriptors = {};
 		std::vector<int> m_rx_fifo_descriptors = {};
+		std::string m_working_path = "";
 		std::vector<std::string> m_rx_fifo_paths = {};
 		std::vector<std::string> m_tx_fifo_paths = {};
 		bool m_connected = false;
@@ -89,9 +92,9 @@ class SatTerm_Server : public SatTerm_Component {
 		pid_t StartClient(std::string const& path_to_terminal_emulator_paths);
 		bool CreateFifos(size_t sc_fifo_count, size_t cs_fifo_count);
 		bool OpenFifos(unsigned long timeout_seconds);
+		std::string GetWorkingPath(void);
 		
 		std::string m_path_to_client_binary = "";
-		int m_stop_fifo_index = 0;
 };
 
 // Client derived class.

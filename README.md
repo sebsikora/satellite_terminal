@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 ```
 <br />
 
-The client constructor will return once the communication channel is established with the parent process, an error occurs or a timeout is reached. When it returns, if the client's `IsConnected()` member function returns `true`,the bi-directional communication channel was established without error.
+The client constructor will return once the communication channel is established with the parent process, an error occurs or a timeout is reached. When it returns, if the client's `IsConnected()` member function returns `true`, the bi-directional communication channel was established without error.
 <br />
 <br />
 

@@ -24,7 +24,7 @@
 
 #include <string>              // std::string.
 #include <vector>              // std::vector.
-#include <iostream>            // std::cout, std::endl.
+#include <iostream>            // std::cout, std::cerr, std::endl.
 
 #include <signal.h>            // SIGPIPE, SIG_IGN.
 #include <unistd.h>            // write(), read(), close().
@@ -68,24 +68,25 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 	size_t argv_start_index = ParseVarargs(argc, argv);
 	
 	if (argv_start_index != 0) {
-		std::string fifo_working_path = std::string(argv[argv_start_index]);
-		m_stop_message = std::string(argv[argv_start_index + 1]);
-		if (m_display_messages) {
-			std::string message = "Fifo working path is " + fifo_working_path;
-			std::cout << message << std::endl;
-		}
+		m_working_path = std::string(argv[argv_start_index]);
+		m_stop_fifo_index = std::stoi(std::string(argv[argv_start_index + 1]));
+		m_stop_message = std::string(argv[argv_start_index + 2]);
+		size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index + 3]));
+		size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 4]));
+		m_tx_fifo_paths = ParseFifoPaths(argv_start_index + 5, tx_fifo_count, argv);
+		m_rx_fifo_paths = ParseFifoPaths(argv_start_index + 5 + tx_fifo_count, rx_fifo_count, argv);
 		
-		size_t tx_fifo_count = std::stoi(std::string(argv[argv_start_index + 2]));
-		size_t rx_fifo_count = std::stoi(std::string(argv[argv_start_index + 3]));
-		m_tx_fifo_paths = ParseFifoPaths(argv_start_index + 4, tx_fifo_count, argv);
-		m_rx_fifo_paths = ParseFifoPaths(argv_start_index + 4 + tx_fifo_count, rx_fifo_count, argv);
+		if (m_display_messages) {
+			std::string message = "Fifo working path is " + m_working_path;
+			std::cerr << message << std::endl;
+		}
 		
 		Configure();
 	} else {
 		m_error_code = {-1, "ParseVarargs()_no_client_args"};
 		if (m_display_messages) {
 			std::string error_message = "ParseVarargs() found no client configuration arguments.";
-			std::cout << error_message << std::endl;
+			std::cerr << error_message << std::endl;
 		}
 		m_connected = false;
 	}
@@ -129,17 +130,17 @@ std::vector<std::string> SatTerm_Client::ParseFifoPaths(size_t argv_start_index,
 void SatTerm_Client::Configure(void) {
 	unsigned long timeout_seconds = 5;
 	bool success = OpenFifos(timeout_seconds);
-
+	
 	if (success) {
 		if (m_display_messages) {
 			std::string message = "Client " + m_identifier + " initialised successfully.";
-			std::cout << message << std::endl;
+			std::cerr << message << std::endl;
 		}
 		m_connected = true;
 	} else {
 		if (m_display_messages) {
 			std::string message = "Client " + m_identifier + " unable to intialise connection.";
-			std::cout << message << std::endl;
+			std::cerr << message << std::endl;
 		}
 		m_connected = false;
 	}
@@ -148,7 +149,7 @@ void SatTerm_Client::Configure(void) {
 bool SatTerm_Client::OpenFifos(unsigned long timeout_seconds) {
 	bool success = false;
 	success = OpenTxFifos(timeout_seconds);
-
+	
 	if (success) {
 		success = OpenRxFifos(timeout_seconds);
 	}

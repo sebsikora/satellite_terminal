@@ -54,27 +54,33 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_end_char = end_char;
 	m_stop_fifo_index = stop_fifo_index;
 	m_stop_message = stop_message;
+
+	bool success = false;
+	m_working_path = GetWorkingPath();
+	if (m_working_path != "") {
+		success = true;
+	}
 	
-	bool success = CreateFifos(tx_fifo_count, rx_fifo_count);
+	success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {
 		if (StartClient("./terminal_emulator_paths.txt") < 0) {
 			m_error_code = {1, "fork()"};
 			if (m_display_messages) {
 				std::string message = "Unable to start client process.";
-				std::cout << message << std::endl;
+				std::cerr << message << std::endl;
 			}
 			success = false;
 		} else {
 			if (m_display_messages) {
 				std::string message = "Client process started.";
-				std::cout << message << std::endl;
+				std::cerr << message << std::endl;
 			}
 		}
 	} else {
 		if (m_display_messages) {
 			std::string message = "Unable to create fifo(s).";
-			std::cout << message << std::endl;
+			std::cerr << message << std::endl;
 		}
 	}
 	if (success) {
@@ -84,13 +90,13 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 			m_connected = true;
 			if (m_display_messages) {
 				std::string message = "Server " + m_identifier + " initialised successfully.";
-				std::cout << message << std::endl;
+				std::cerr << message << std::endl;
 			}
 		} else {
 			m_connected = false;
 			if (m_display_messages) {
 				std::string message = "Server " + m_identifier + " unable to intialise connection.";
-				std::cout << message << std::endl;
+				std::cerr << message << std::endl;
 			}
 		}
 	} else {
@@ -102,44 +108,66 @@ SatTerm_Server::~SatTerm_Server() {
 	if (IsConnected()) {
 		SendMessage(m_stop_message, m_stop_fifo_index);
 		if (m_display_messages) {
-			std::cout << "Waiting for client process to terminate..." << std::endl;
+			std::cerr << "Waiting for client process to terminate..." << std::endl;
 		}
 	}
 	// Poll for EOF on read on fifo 0 (tells us that client write end has closed).
 	while(IsConnected()) {
 		GetMessage(0, false, 0);
 	}
-	// Close and delete FIFO buffers.
-	for (size_t fifo_index = 0; fifo_index < m_rx_fifo_descriptors.size(); fifo_index ++) {
-		close(m_rx_fifo_descriptors[fifo_index]);
-		int e = unlink(m_rx_fifo_paths[fifo_index].c_str());
-		if ((e < 0) && m_display_messages) {
-			std::string error_message = "Unable to unlink fifo at path " + m_rx_fifo_paths[fifo_index];
-			perror(error_message.c_str());
-		}
-		remove(m_rx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
+	// Close fifos if open.
+	for (const auto& fifo_descriptor : m_rx_fifo_descriptors) {
+		close(fifo_descriptor);
 	}
-	
-	for (size_t fifo_index = 0; fifo_index < m_tx_fifo_descriptors.size(); fifo_index ++) {
-		close(m_tx_fifo_descriptors[fifo_index]);
-		int e = unlink(m_tx_fifo_paths[fifo_index].c_str());
-		if ((e < 0) && m_display_messages) {
-			std::string error_message = "Unable to unlink fifo at path " + m_tx_fifo_paths[fifo_index];
+	for (const auto& fifo_descriptor : m_tx_fifo_descriptors) {
+		close(fifo_descriptor);
+	}
+	// Delete fifos if created.
+	for (const auto& fifo_path : m_rx_fifo_paths) {
+		int status = unlink(fifo_path.c_str());
+		if ((status < 0) && m_display_messages) {
+			std::string error_message = "Unable to unlink fifo at path " + fifo_path;
 			perror(error_message.c_str());
 		}
-		remove(m_tx_fifo_paths[fifo_index].c_str());		// If temporary file still exists, delete it.
+	}
+	for (const auto& fifo_path : m_tx_fifo_paths) {
+		int status = unlink(fifo_path.c_str());
+		if ((status < 0) && m_display_messages) {
+			std::string error_message = "Unable to unlink fifo at path " + fifo_path;
+			perror(error_message.c_str());
+		}
+	}
+}
+
+std::string SatTerm_Server::GetWorkingPath(void) {
+	char working_path[FILENAME_MAX + 1];
+	char* retval = getcwd(working_path, FILENAME_MAX + 1);
+	if (retval == NULL) {
+		m_error_code = {errno, "getcwd()"};
+		if (m_display_messages) {
+			perror("getcwd() unable to obtain current working path.");
+		}
+		return "";
+	} else {
+		std::string working_path_string = std::string(working_path);
+		if (working_path_string != "/") {
+			working_path_string += "/";
+		}
+		if (m_display_messages) {
+			std::cerr << "Fifo working path is " << working_path_string << std::endl;
+		}
+		return working_path_string;
 	}
 }
 
 bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 	m_error_code = {0, ""};
 	bool success = true;
-	int status = 0;
+	int status = 0;		
 	
 	for (size_t tx_fifo_index = 0; tx_fifo_index < tx_fifo_count; tx_fifo_index ++) {
 		std::string fifo_path = m_identifier + "_fifo_sc_" + std::to_string(tx_fifo_index);
 		remove(fifo_path.c_str());	// If temporary file already exists, delete it.
-		m_tx_fifo_paths.emplace_back(fifo_path);
 		
 		status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
 		
@@ -151,6 +179,8 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 			}
 			success = false;
 			break;
+		} else {
+			m_tx_fifo_paths.emplace_back(fifo_path);
 		}
 	}
 	
@@ -158,7 +188,6 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 		for (size_t rx_fifo_index = 0; rx_fifo_index < rx_fifo_count; rx_fifo_index ++) {
 			std::string fifo_path = m_identifier + "_fifo_cs_" + std::to_string(rx_fifo_index);
 			remove(fifo_path.c_str());	// If temporary file already exists, delete it.
-			m_rx_fifo_paths.emplace_back(fifo_path);
 			
 			status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
 			
@@ -170,6 +199,8 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 				}
 				success = false;
 				break;
+			} else {
+				m_rx_fifo_paths.emplace_back(fifo_path);
 			}
 		}
 	}
@@ -178,64 +209,51 @@ bool SatTerm_Server::CreateFifos(size_t tx_fifo_count, size_t rx_fifo_count) {
 
 pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths) {
 	m_error_code = {0, ""};
-	bool success = true;
-	
-	char working_path[FILENAME_MAX + 1];
-	char* retval = getcwd(working_path, FILENAME_MAX + 1);
-	if (retval == NULL) {
-		m_error_code = {errno, "getcwd()"};
-		if (m_display_messages) {
-			perror("getcwd() unable to obtain current working path.");
-		}
-		success = false;
-	} else {
-		if (m_display_messages) {
-			std::cout << "Fifo working path is " << std::string(working_path) << std::endl;
-		}
-	}
 	
 	std::vector<std::string> terminal_emulator_paths = LoadTerminalEmulatorPaths(path_to_terminal_emulator_paths);
 	
 	pid_t process;
-	if (success) {
-		if (terminal_emulator_paths.size() > 0) {
-			process = fork();
-			if (process < 0) {
-				m_error_code = {errno, "fork()"};
-				if (m_display_messages) {
-					perror("fork() to start client process failed."); // fork() failed.
-				}
-				return process;
+	if (terminal_emulator_paths.size() > 0) {
+		process = fork();
+		if (process < 0) {                        // fork() failed.
+			m_error_code = {errno, "fork()"};
+			if (m_display_messages) {
+				perror("fork() to client process failed.");
+			}
+			return process;
+		}
+		if (process == 0) {                       // We are in the child process!
+			// Assemble command string to be passed to terminal emulator.
+			std::string arg_string = m_path_to_client_binary;
+			arg_string += " client_args";    // Argument start delimiter.
+			arg_string += " " + m_working_path;
+			arg_string += " " + std::to_string(m_stop_fifo_index);
+			arg_string += " " + m_stop_message;
+			arg_string += " " + std::to_string(m_rx_fifo_paths.size());
+			arg_string += " " + std::to_string(m_tx_fifo_paths.size());
+			for (const auto& fifo_path : m_rx_fifo_paths) {
+				arg_string += " " + fifo_path;
+			}
+			for (const auto& fifo_path : m_tx_fifo_paths) {
+				arg_string += " " + fifo_path;
 			}
 			
-			if (process == 0) {
-				// We are in the child process!
-				std::string arg_string = m_path_to_client_binary;
-				arg_string += " client_args";
-				arg_string += " " + std::string(working_path) + "/";
-				arg_string += " " + m_stop_message;
-				arg_string += " " + std::to_string(m_rx_fifo_paths.size());
-				arg_string += " " + std::to_string(m_tx_fifo_paths.size());
-				for (const auto& fifo_path : m_rx_fifo_paths) {
-					arg_string += " " + fifo_path;
-				}
-				for (const auto& fifo_path : m_tx_fifo_paths) {
-					arg_string += " " + fifo_path;
-				}
-				
-				//~std::cout << "Full command is " << arg_string << std::endl;
-				for (const auto terminal_path : terminal_emulator_paths) {
-					// No need to check execv() return value. If it returns, you know it failed.
-					execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);
-				}
-				if (m_display_messages) {
-					std::string error_string = "Client process execl() failed to start client binary. Check terminal_emulator_paths.txt";
-					perror(error_string.c_str());
-				}
-				std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
-				return -1;
+			if (m_display_messages) {
+				std::cerr << "Client process attempting to execute via terminal emulator '-e':" << std::endl << arg_string << std::endl;
 			}
-		} else {
+			
+			for (const auto terminal_path : terminal_emulator_paths) {
+				// No need to check execv() return value. If it returns, you know it failed.
+				if (m_display_messages) {
+					std::cerr << "Trying " << terminal_path << std::endl;
+				}
+				execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);
+			}
+			if (m_display_messages) {
+				std::string error_string = "Client process execl() failed to start client binary. Check terminal_emulator_paths.txt";
+				perror(error_string.c_str());
+			}
+			std::exit(1);		// Have to exit(1) here to terminate client process if we couldn't start a terminal emulator.
 			return -1;
 		}
 	} else {
@@ -269,7 +287,7 @@ std::vector<std::string> SatTerm_Server::LoadTerminalEmulatorPaths(std::string c
 	} else {
 		m_error_code = {-1, "Unable to open terminal emulator paths file at " + file_path};
 		if (m_display_messages) {
-			std::cout << "Unable to open terminal emulator paths file at " << file_path << std::endl;
+			std::cerr << "Unable to open terminal emulator paths file at " << file_path << std::endl;
 		}
 	}
 	return terminal_emulator_paths;

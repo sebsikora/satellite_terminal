@@ -45,7 +45,7 @@ bool SatTerm_Component::OpenRxFifos(unsigned long timeout_seconds) {
 	bool success = false;
 	
 	for (size_t rx_fifo_index = 0; rx_fifo_index < m_rx_fifo_paths.size(); rx_fifo_index ++) {
-		std::string fifo_path = m_rx_fifo_paths[rx_fifo_index];
+		std::string fifo_path = m_working_path + m_rx_fifo_paths[rx_fifo_index];
 		
 		int fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK);
 		
@@ -59,13 +59,15 @@ bool SatTerm_Component::OpenRxFifos(unsigned long timeout_seconds) {
 				success = true;
 				if (m_display_messages) {
 					std::string message = m_component_type + " " + m_identifier + " opened fifo " + fifo_path + " for reading on descriptor " + std::to_string(fifo);
-					std::cout << message << std::endl;
+					std::cerr << message << std::endl;
 				}
 			} else {
+				m_rx_fifo_descriptors.pop_back();    // Failed to receive 'init' message so do not store descriptor.
+				
 				if (m_error_code == error_descriptor{-1, "GetMessage()_tx_unconn_timeout"}) {
 					if (m_display_messages) {
 						std::string error_message =  m_component_type + " " + m_identifier + " opened fifo " + fifo_path + " for reading on descriptor " + std::to_string(fifo) + " but timed-out waiting for an init message.";
-						std::cout << error_message << std::endl;
+						std::cerr << error_message << std::endl;
 					}
 				}
 				success = false;
@@ -92,21 +94,23 @@ bool SatTerm_Component::OpenTxFifos(unsigned long timeout_seconds) {
 	int fifo;
 	
 	for (size_t fifo_index = 0; fifo_index < m_tx_fifo_paths.size(); fifo_index ++) {
-		std::string fifo_path = m_tx_fifo_paths[fifo_index];
+		std::string fifo_path = m_working_path + m_tx_fifo_paths[fifo_index];
 		
 		fifo = PollOpenForTx(fifo_path, start_time, timeout_seconds); 
 		
 		if (fifo >= 0) {
 			if (m_display_messages) {
 				std::string message = m_component_type + " " + m_identifier + " opened fifo " + fifo_path + " for writing on descriptor " + std::to_string(fifo);
-				std::cout << message << std::endl;
+				std::cerr << message << std::endl;
 			}
+			
 			m_tx_fifo_descriptors.emplace_back(fifo);
+			
 			std::string init_message = "init";
+			init_message = SendMessage(init_message, fifo_index);
 			
-			size_t chars_sent = SendMessage(init_message, fifo_index);
-			
-			if (chars_sent < init_message.size() + 1) {
+			if (GetErrorCode().err_no != 0) {
+				m_tx_fifo_descriptors.pop_back();    // Failed to send 'init', so do not store descriptor.
 				success = false;
 				break;
 			}
@@ -152,69 +156,77 @@ int SatTerm_Component::PollOpenForTx(std::string const& fifo_path, unsigned long
 
 std::string SatTerm_Component::GetMessage(size_t rx_fifo_index, bool capture_end_char, unsigned long timeout_seconds) {
 	m_error_code = {0, ""};
-	char char_in;
 	bool end_char_received = false;
 	std::string message;
-	bool finished = false;
-	
-	unsigned long start_time = 0;
-	if (timeout_seconds > 0) {
-		start_time = time(0);
-	}
-	
-	while (!finished) {
+
+	if (rx_fifo_index >= m_rx_fifo_descriptors.size()) {
+		m_error_code = {-1, "rx_fifo_index_OOR"};
+		if (m_display_messages) {
+			std::string error_message = "RX fifo index " + std::to_string(rx_fifo_index) + " Out Of Range.";
+			std::cerr << error_message << std::endl;
+		}
+	} else {
+
+		char char_in;
+		bool finished = false;
+		unsigned long start_time = 0;
+		if (timeout_seconds > 0) {
+			start_time = time(0);
+		}
 		
-		int status = read(m_rx_fifo_descriptors[rx_fifo_index], &char_in, 1);
-		
-		if (status > 0) {                       // read() read-in a character to the char buffer.
-			if (char_in != m_end_char) {
-				m_current_messages[rx_fifo_index].push_back(char_in);
-			} else {
-				if (capture_end_char) {
+		while (!finished) {
+			
+			int status = read(m_rx_fifo_descriptors[rx_fifo_index], &char_in, 1);
+			
+			if (status > 0) {                       // read() read-in a character to the char buffer.
+				if (char_in != m_end_char) {
 					m_current_messages[rx_fifo_index].push_back(char_in);
-				}
-				end_char_received = true;
-				message = m_current_messages[rx_fifo_index];
-				m_current_messages[rx_fifo_index] = "";
-				break;
-			}
-		
-		} else if (status == 0) {                                            // EOF. read() will return this if no process has the pipe open for writing.
-			    if (!m_connected) {
-					finished = ((time(0) - start_time) > timeout_seconds);   // If the Component has not finished initialising, assume that the partner
-					if (finished) {                                          // component hasn't opened the fifo for writing yet so continue to poll   
-						m_error_code = {-1, "GetMessage()_tx_unconn_timeout"};         // until timeout.
+				} else {
+					if (capture_end_char) {
+						m_current_messages[rx_fifo_index].push_back(char_in);
 					}
-				} else {                                                     // If the Component is initialised, the partner component no-longer has the
-					m_error_code = {-1, "read()_EOF"};                       // fifo open for writing (has become disconnected).
-					if (m_display_messages) {
-						std::string error_message = "EOF on read() to fifo index " + std::to_string(rx_fifo_index) + " suggests counterpart terminated.";
-						std::cout << error_message << std::endl;
-					}
-					m_connected = false;
-					finished = true;
-				}
-		
-		} else if (status < 0) {                // read() indicates an error.
-			switch (errno) {                    // See under errors here - https://pubs.opengroup.org/onlinepubs/009604599/functions/read.html
-				case EAGAIN:					// Non-blocking read on empty fifo with connected writer will return -1 with error EAGAIN,
-					finished = ((time(0) - start_time) > timeout_seconds);                                      // so we continue to poll.
-					if (finished && (timeout_seconds > 0)) {
-						m_error_code = {-1, "GetMessage()_tx_conn_timeout"};
-					}
+					end_char_received = true;
+					message = m_current_messages[rx_fifo_index];
+					m_current_messages[rx_fifo_index] = "";
 					break;
-				default:                        // Trap all other read() errors here.
-					m_error_code = {errno, "read()"};
-					if (m_display_messages) {
-						std::string error_message = "Error on read() to fifo index " + std::to_string(rx_fifo_index);
-						perror(error_message.c_str());
+				}
+			
+			} else if (status == 0) {                                            // EOF. read() will return this if no process has the pipe open for writing.
+					if (!m_connected) {
+						finished = ((time(0) - start_time) > timeout_seconds);   // If the Component has not finished initialising, assume that the partner
+						if (finished) {                                          // component hasn't opened the fifo for writing yet so continue to poll   
+							m_error_code = {-1, "GetMessage()_tx_unconn_timeout"};         // until timeout.
+						}
+					} else {                                                     // If the Component is initialised, the partner component no-longer has the
+						m_error_code = {-1, "read()_EOF"};                       // fifo open for writing (has become disconnected).
+						if (m_display_messages) {
+							std::string error_message = "EOF on read() to fifo index " + std::to_string(rx_fifo_index) + " suggests counterpart terminated.";
+							std::cerr << error_message << std::endl;
+						}
+						m_connected = false;
+						finished = true;
 					}
-					m_connected = false;
-					finished = true;
+			
+			} else if (status < 0) {                // read() indicates an error.
+				switch (errno) {                    // See under errors here - https://pubs.opengroup.org/onlinepubs/009604599/functions/read.html
+					case EAGAIN:					// Non-blocking read on empty fifo with connected writer will return -1 with error EAGAIN,
+						finished = ((time(0) - start_time) > timeout_seconds);                                      // so we continue to poll.
+						if (finished && (timeout_seconds > 0)) {
+							m_error_code = {-1, "GetMessage()_tx_conn_timeout"};
+						}
+						break;
+					default:                        // Trap all other read() errors here.
+						m_error_code = {errno, "read()"};
+						if (m_display_messages) {
+							std::string error_message = "Error on read() to fifo index " + std::to_string(rx_fifo_index);
+							perror(error_message.c_str());
+						}
+						m_connected = false;
+						finished = true;
+				}
 			}
 		}
 	}
-	
 	if (end_char_received) {
 		return message;
 	} else {
@@ -222,53 +234,67 @@ std::string SatTerm_Component::GetMessage(size_t rx_fifo_index, bool capture_end
 	}
 }
 
-size_t SatTerm_Component::SendMessage(std::string const& message, size_t tx_fifo_index, unsigned long timeout_seconds) {
-	std::string msg = message;
-	msg.push_back(m_end_char);
-	size_t message_length = msg.size();
+std::string SatTerm_Component::SendMessage(std::string const& message, size_t tx_fifo_index, unsigned long timeout_seconds) {
 	
-	size_t success = SendBytes(msg.c_str(), message_length, tx_fifo_index, timeout_seconds);
+	std::string working_message = message;
+	working_message.push_back(m_end_char);
+	size_t working_message_length = working_message.size();
 	
-	return success;
+	size_t bytes_sent = SendBytes(working_message.c_str(), working_message_length, tx_fifo_index, timeout_seconds);
+
+	if (bytes_sent == working_message_length) {
+		return "";
+	} else {
+		return message.substr(bytes_sent, std::string::npos);
+	}
 }
 
 size_t SatTerm_Component::SendBytes(const char* bytes, size_t byte_count, size_t tx_fifo_index, unsigned long timeout_seconds) {
 	m_error_code = {0, ""};
-	unsigned long start_time = time(0);
-	bool finished = false;
-	
-	size_t offset = 0;
 	size_t bytes_remaining = byte_count;
-	while (!finished) {
-		
-		int status = write(m_tx_fifo_descriptors[tx_fifo_index], bytes + offset, bytes_remaining);
-		
-		if (status >= 0) {
-			if ((size_t)(status) == bytes_remaining) {
-				finished = true;
-			} else {
-				offset += (size_t)(status);
-			}
-			bytes_remaining -= (size_t)(status);
-		
-		} else {
-			switch (errno) {
-				case EAGAIN:
-					finished = ((time(0) - start_time) > timeout_seconds);
-					if ((finished) && (timeout_seconds == 0)) {
-						m_error_code = {errno, "write()_thread_block"};
-					} else if ((finished) && (timeout_seconds > 0)) {
-						m_error_code = {errno, "write()_thread_block_timeout"};
-					}
-					break;
-				default:                        // Trap all other write() errors here.
-					m_error_code = {errno, "write()"};
-					if (m_display_messages) {
-						std::string error_message = "Error on write() to fifo " + m_tx_fifo_paths[tx_fifo_index];
-						perror(error_message.c_str());
-					}
-					m_connected = false;
+	
+	if (tx_fifo_index >= m_tx_fifo_descriptors.size()) {
+		m_error_code = {-1, "tx_fifo_index_OOR"};
+		if (m_display_messages) {
+			std::string error_message = "TX fifo index " + std::to_string(tx_fifo_index) + " Out Of Range.";
+			std::cerr << error_message << std::endl;
+		}
+	} else {
+
+		unsigned long start_time = time(0);
+		bool finished = false;
+		size_t offset = 0;
+
+		while (!finished) {
+			
+			int status = write(m_tx_fifo_descriptors[tx_fifo_index], bytes + offset, bytes_remaining);
+			
+			if (status >= 0) {
+				if ((size_t)(status) == bytes_remaining) {
 					finished = true;
+				} else {
+					offset += (size_t)(status);
+				}
+				bytes_remaining -= (size_t)(status);
+			} else {
+				switch (errno) {
+					case EAGAIN:
+						finished = ((time(0) - start_time) > timeout_seconds);
+						if ((finished) && (timeout_seconds == 0)) {
+							m_error_code = {errno, "write()_thread_block"};
+						} else if ((finished) && (timeout_seconds > 0)) {
+							m_error_code = {errno, "write()_thread_block_timeout"};
+						}
+						break;
+					default:                        // Trap all other write() errors here.
+						m_error_code = {errno, "write()"};
+						if (m_display_messages) {
+							std::string error_message = "Error on write() to fifo " + m_tx_fifo_paths[tx_fifo_index];
+							perror(error_message.c_str());
+						}
+						m_connected = false;
+						finished = true;
+				}
 			}
 		}
 	}
@@ -289,4 +315,8 @@ error_descriptor SatTerm_Component::GetErrorCode(void) {
 
 std::string SatTerm_Component::GetStopMessage(void) {
 	return m_stop_message;
+}
+
+int SatTerm_Component::GetStopFifoIndex(void) {
+	return m_stop_fifo_index;
 }

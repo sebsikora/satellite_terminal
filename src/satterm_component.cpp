@@ -210,7 +210,7 @@ std::string SatTerm_Component::GetMessage(size_t rx_fifo_index, bool capture_end
 			} else if (status < 0) {                // read() indicates an error.
 				switch (errno) {                    // See under errors here - https://pubs.opengroup.org/onlinepubs/009604599/functions/read.html
 					case EAGAIN:					// Non-blocking read on empty fifo with connected writer will return -1 with error EAGAIN,
-						finished = ((time(0) - start_time) > timeout_seconds);                                      // so we continue to poll.
+						finished = ((time(0) - start_time) > timeout_seconds);                           // so we continue to poll unless timeout.
 						if (finished && (timeout_seconds > 0)) {
 							m_error_code = {-1, "GetMessage()_tx_conn_timeout"};
 						}
@@ -278,7 +278,7 @@ size_t SatTerm_Component::SendBytes(const char* bytes, size_t byte_count, size_t
 				bytes_remaining -= (size_t)(status);
 			} else {
 				switch (errno) {
-					case EAGAIN:
+					case EAGAIN:                    // Erro - thread would block (buffer full, etc). Try again unless timeout.
 						finished = ((time(0) - start_time) > timeout_seconds);
 						if ((finished) && (timeout_seconds == 0)) {
 							m_error_code = {errno, "write()_thread_block"};

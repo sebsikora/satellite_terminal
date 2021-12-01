@@ -55,8 +55,13 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_component_type = "Server";
 	m_path_to_client_binary = path_to_client_binary;
 	m_end_char = end_char;
-	m_stop_fifo_index = stop_fifo_index;
 	m_stop_message = stop_message;
+	
+	if (stop_fifo_index >= tx_fifo_count) {    // Cap m_stop_fifo_index to max fifo index.
+		m_stop_fifo_index = tx_fifo_count - 1;
+	} else {
+		m_stop_fifo_index = stop_fifo_index;
+	}
 
 	bool success = false;
 	m_working_path = GetWorkingPath();
@@ -70,6 +75,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	if (rx_fifo_count < 1) {
 		rx_fifo_count = 1;
 	}
+	
 	success = CreateFifos(tx_fifo_count, rx_fifo_count);
 
 	if (success) {
@@ -197,6 +203,7 @@ std::vector<std::string> SatTerm_Server::__CreateFifos(size_t fifo_count, std::s
 		int status = mkfifo(fifo_identifier.c_str(), S_IFIFO|0666);
 		
 		if (status < 0) {
+			// Info on possible errors for mkfifo() - https://pubs.opengroup.org/onlinepubs/009696799/functions/mkfifo.html
 			m_error_code = {errno, "mkfifo()"};
 			if (m_display_messages) {
 				std::string error_message = "Server mkfifo() error trying to open fifo at path " + m_working_path + fifo_identifier;
@@ -219,6 +226,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 	if (terminal_emulator_paths.size() > 0) {
 		process = fork();
 		if (process < 0) {                        // fork() failed.
+			// Info on possible fork() errors - https://pubs.opengroup.org/onlinepubs/009696799/functions/fork.html
 			m_error_code = {errno, "fork()"};
 			if (m_display_messages) {
 				perror("fork() to client process failed.");
@@ -254,6 +262,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 				execl(terminal_path.c_str(), terminal_path.c_str(), "-e", arg_string.c_str(), (char*) NULL);
 			}
 			if (m_display_messages) {
+				// No point storing m_error_code, we are in the child process...
 				std::string error_string = "Client process execl() failed to start client binary. Check terminal_emulator_paths.txt";
 				perror(error_string.c_str());
 			}

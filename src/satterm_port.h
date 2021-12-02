@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------------------------------
+// satellite_terminal - Easily spawn and communicate bidirectionally with client processes in separate
+//                      terminal emulator instances.
+// -----------------------------------------------------------------------------------------------------
+// seb.nf.sikora@protonmail.com
+//
+// Copyright © 2021 Dr Seb N.F. Sikora.
+//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -----------------------------------------------------------------------------------------------------
+
 #include <string>                    // std::string.
 #include <vector>                    // std::vector.
 
@@ -59,7 +71,7 @@ class Port {
 		
 		std::string m_identifier = "";
 		std::string m_working_path = "";
-		int m_fifo_descriptor = 0;
 		char m_end_char = 0;
+		int m_fifo_descriptor = 0;
 		std::string m_current_message = "";
 };

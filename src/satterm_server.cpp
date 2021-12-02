@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------------------------------
+// satellite_terminal - Easily spawn and communicate bidirectionally with client processes in separate
+//                      terminal emulator instances.
+// -----------------------------------------------------------------------------------------------------
+// seb.nf.sikora@protonmail.com
+//
+// Copyright © 2021 Dr Seb N.F. Sikora.
+//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -----------------------------------------------------------------------------------------------------
+
 #include <iostream>
 #include <fstream>                    // std::ifstream.
 #include <stdexcept>
@@ -22,10 +34,10 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_stop_message = stop_message;
 	
 	if (out_port_identifiers.size() == 0) {
-		out_port_identifiers.push_back("tx");
+		out_port_identifiers.push_back("server_tx");
 	}
 	if (in_port_identifiers.size() == 0) {
-		in_port_identifiers.push_back("rx");
+		in_port_identifiers.push_back("server_rx");
 	}
 	m_default_port.tx = out_port_identifiers[0];
 	m_default_port.rx = in_port_identifiers[0];
@@ -37,10 +49,10 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_working_path = GetWorkingPath();
 	
 	if (m_working_path != "") {
-		bool success = CreatePorts(true, false, m_working_path, out_port_identifiers, m_display_messages, m_end_char, m_out_ports);
 		
+		bool success = CreatePorts(true, true, m_working_path, in_port_identifiers, m_display_messages, m_end_char, m_in_ports);
 		if (success) {
-			success = CreatePorts(true, true, m_working_path, in_port_identifiers, m_display_messages, m_end_char, m_in_ports);
+			success = CreatePorts(true, false, m_working_path, out_port_identifiers, m_display_messages, m_end_char, m_out_ports);
 		}
 		
 		if (success) {

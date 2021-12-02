@@ -1,7 +1,20 @@
+// -----------------------------------------------------------------------------------------------------
+// satellite_terminal - Easily spawn and communicate bidirectionally with client processes in separate
+//                      terminal emulator instances.
+// -----------------------------------------------------------------------------------------------------
+// seb.nf.sikora@protonmail.com
+//
+// Copyright © 2021 Dr Seb N.F. Sikora.
+//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -----------------------------------------------------------------------------------------------------
+
 #include <iostream>
 #include <string>
 #include <map>
 #include <vector>
+#include <ctime>                      // time().
 
 #include <stdio.h>                    // perror().
 #include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
@@ -189,9 +202,11 @@ std::string Port::SendMessage(std::string const& message, unsigned long timeout_
 	
 	size_t bytes_sent = SendBytes(working_message.c_str(), working_message_length, timeout_seconds);
 	
-	if (bytes_sent == working_message_length) {
+	if (bytes_sent == working_message_length) {                     // Sent whole working_message including m_end_char.
 		return "";
-	} else {
+	} else if (bytes_sent == (working_message_length - 1)) {        // Sent whole message but did not send m_end_char.
+		return "";
+	} else {                                                        // Sent part of message.
 		return message.substr(bytes_sent, std::string::npos);
 	}
 }
@@ -299,7 +314,7 @@ std::string Port::GetMessage(bool capture_end_char, unsigned long timeout_second
 				switch (errno) {                    // See under errors here - https://pubs.opengroup.org/onlinepubs/009604599/functions/read.html
 					case EAGAIN:					// Non-blocking read on empty fifo with connected writer will return -1 with error EAGAIN,
 						finished = ((time(0) - start_time) > timeout_seconds);                           // so we continue to poll unless timeout.
-						if (finished && (timeout_seconds > 0)) {
+						if (finished && (timeout_seconds > 0)) {        // Only set m_error_code to EAGAIN if we have been waiting on a timeout.
 							m_error_code = {errno, "GetMessage()_tx_conn_timeout"};
 						}
 						break;

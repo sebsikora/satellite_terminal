@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
 			
 			if (inbound_message != "") {
 				std::cout << inbound_message << std::endl;
-
 				if (inbound_message != stc.GetStopMessage()) {
 					stc.SendMessage(inbound_message);
 				} else {
@@ -27,15 +26,11 @@ int main(int argc, char *argv[]) {
 			}
 			usleep(1000);
 		}
-		
 		std::cerr << "On termination error code = " << stc.GetErrorCode().err_no << "    Error detail = " << stc.GetErrorCode().detail << std::endl;
 		sleep(5);        // Delay to read the message before terminal emulator window closes.
-		
 	} else {
-		
 		std::cerr << "On termination error code = " << stc.GetErrorCode().err_no << "    Error detail = " << stc.GetErrorCode().detail << std::endl;
 		sleep(5);        // Delay to read the message before terminal emulator window closes.
-		
 	}
 	return 0;
 }

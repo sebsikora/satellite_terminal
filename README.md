@@ -150,7 +150,7 @@ int main (void) {
 			std::string outbound_message = "Message number " + std::to_string(i) + " from server.";
 			sts.SendMessage(outbound_message);
 		}
-
+		
 		unsigned long timeout_seconds = 5;
 		unsigned long start_time = time(0);
 		
@@ -161,15 +161,13 @@ int main (void) {
 			}
 			usleep(1000);
 		}
-		if (sts.GetErrorCode().err_no != 0) {
-			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
-		}
+		
+		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().detail << std::endl;
 		
 	} else {
-		if (sts.GetErrorCode().err_no != 0) {
-			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
-		}
-		sleep(5);
+		
+		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().detail << std::endl;
+		
 	}
 	return 0;
 }
@@ -194,8 +192,11 @@ int main(int argc, char *argv[]) {
 	SatTerm_Client stc("test_client", argc, argv);
 
 	if (stc.IsConnected()) {
+		
 		while (stc.GetErrorCode().err_no == 0) {
+			
 			std::string inbound_message = stc.GetMessage();
+			
 			if (inbound_message != "") {
 				std::cout << inbound_message << std::endl;
 				if (inbound_message != stc.GetStopMessage()) {
@@ -203,18 +204,15 @@ int main(int argc, char *argv[]) {
 				} else {
 					break;
 				}
+				
 			}
 			usleep(1000);
 		}
-		if (stc.GetErrorCode().err_no != 0) {
-			std::cerr << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
-		}
-		sleep(5);
+		std::cerr << "On termination error code = " << stc.GetErrorCode().err_no << "    Error detail = " << stc.GetErrorCode().detail << std::endl;
+		sleep(5);        // Delay to read the message before terminal emulator window closes.
 	} else {
-		if (stc.GetErrorCode().err_no != 0) {
-			std::cerr << stc.GetErrorCode().err_no << "    " << stc.GetErrorCode().function << std::endl;
-		}
-		sleep(5);
+		std::cerr << "On termination error code = " << stc.GetErrorCode().err_no << "    Error detail = " << stc.GetErrorCode().detail << std::endl;
+		sleep(5);        // Delay to read the message before terminal emulator window closes.
 	}
 	return 0;
 }
@@ -225,17 +223,17 @@ Compile `server_demo.cpp` and `client_demo.cpp`, then execute `server_demo` from
 <br />
 
 ```
-user@home:~/Documents/cpp_projects/satellite_terminal$ g++ -Wall -g -O3 -I src/ src/satterm_client.cpp src/satterm_server.cpp src/satterm_component.cpp demos/server_demo.cpp -o server_demo
-user@home:~/Documents/cpp_projects/satellite_terminal$ g++ -Wall -g -O3 -I src/ src/satterm_client.cpp src/satterm_server.cpp src/satterm_component.cpp demos/client_demo.cpp -o client_demo
+user@home:~/Documents/cpp_projects/satellite_terminal$ g++  -Wall -g -O3 -I src/ src/satterm_agent.cpp src/satterm_client.cpp src/satterm_server.cpp src/satterm_port.cpp demos/server_demo.cpp -o server_demo
+user@home:~/Documents/cpp_projects/satellite_terminal$ g++  -Wall -g -O3 -I src/ src/satterm_agent.cpp src/satterm_client.cpp src/satterm_server.cpp src/satterm_port.cpp demos/client_demo.cpp -o client_demo
 user@home:~/Documents/cpp_projects/satellite_terminal$ ./server_demo 
-Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal/
+Server working path is /home/user/Documents/cpp_projects/satellite_terminal/
 Client process started.
 Client process attempting to execute via terminal emulator '-e':
-./client_demo client_args /home/user/Documents/cpp_projects/satellite_terminal/ 0 3 q 1 1 test_server_fifo_cs_0 test_server_fifo_sc_0
+./client_demo client_args /home/user/Documents/cpp_projects/satellite_terminal/ 3 q 1 1 server_rx server_tx
 Trying /usr/bin/x-terminal-emulator
-Server test_server opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_cs_0 for reading on descriptor 3
-Server test_server opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_sc_0 for writing on descriptor 4
-Server test_server initialised successfully.
+In Port server_rx opened fifo /home/user/Documents/cpp_projects/satellite_terminal/server_rx for reading on descriptor 3
+Out Port server_tx opened fifo /home/user/Documents/cpp_projects/satellite_terminal/server_tx for writing on descriptor 4
+Server test_server successfully initialised connection.
 Message "Message number 0 from server." returned by client.
 Message "Message number 1 from server." returned by client.
 Message "Message number 2 from server." returned by client.
@@ -246,8 +244,9 @@ Message "Message number 6 from server." returned by client.
 Message "Message number 7 from server." returned by client.
 Message "Message number 8 from server." returned by client.
 Message "Message number 9 from server." returned by client.
+On termination error code = 0    Error detail = 
 Waiting for client process to terminate...
-EOF on read() to fifo index 0 suggests counterpart terminated.
+EOF error on GetMessage() for In Port server_rx suggests counterpart terminated.
 user@home:~/Documents/cpp_projects/satellite_terminal$
 ```
 <br />
@@ -256,10 +255,10 @@ Output in child terminal emulator instance:
 <br />
 
 ```
-Fifo working path is /home/user/Documents/cpp_projects/satellite_terminal/
-Client test_client opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_cs_0 for writing on descriptor 3
-Client test_client opened fifo /home/user/Documents/cpp_projects/satellite_terminal/test_server_fifo_sc_0 for reading on descriptor 4
-Client test_client initialised successfully.
+Client working path is /home/user/Documents/cpp_projects/satellite_terminal/
+Out Port server_rx opened fifo /home/user/Documents/cpp_projects/satellite_terminal/server_rx for writing on descriptor 3
+In Port server_tx opened fifo /home/user/Documents/cpp_projects/satellite_terminal/server_tx for reading on descriptor 4
+Client test_client successfully initialised connection.
 Message number 0 from server.
 Message number 1 from server.
 Message number 2 from server.
@@ -271,6 +270,7 @@ Message number 7 from server.
 Message number 8 from server.
 Message number 9 from server.
 q
+On termination error code = 0    Error detail = 
 ```
 <br />
 

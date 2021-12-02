@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------------------------------
+// satellite_terminal - Easily spawn and communicate bidirectionally with client processes in separate
+//                      terminal emulator instances.
+// -----------------------------------------------------------------------------------------------------
+// seb.nf.sikora@protonmail.com
+//
+// Copyright © 2021 Dr Seb N.F. Sikora.
+//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT>.
+// -----------------------------------------------------------------------------------------------------
+
 #include <iostream>
 #include <fstream>                    // std::ifstream.
 #include <stdexcept>

@@ -15,7 +15,7 @@ int main (void) {
 			std::string outbound_message = "Message number " + std::to_string(i) + " from server.";
 			sts.SendMessage(outbound_message);
 		}
-
+		
 		unsigned long timeout_seconds = 5;
 		unsigned long start_time = time(0);
 		
@@ -26,15 +26,13 @@ int main (void) {
 			}
 			usleep(1000);
 		}
-		if (sts.GetErrorCode().err_no != 0) {
-			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
-		}
+		
+		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().detail << std::endl;
 		
 	} else {
-		if (sts.GetErrorCode().err_no != 0) {
-			std::cerr << sts.GetErrorCode().err_no << "    " << sts.GetErrorCode().function << std::endl;
-		}
-		sleep(5);
+		
+		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().detail << std::endl;
+		
 	}
 	return 0;
 }

@@ -50,7 +50,7 @@ bool SatTerm_Agent::OpenPorts(std::map<std::string, std::unique_ptr<Port>>& port
 }
 
 std::string SatTerm_Agent::GetMessage(bool capture_end_char, unsigned long timeout_seconds) {
-	return GetMessage(m_default_port.rx, capture_end_char, timeout_seconds);
+	return GetMessage(m_default_port.in, capture_end_char, timeout_seconds);
 }
 
 std::string SatTerm_Agent::GetMessage(std::string const& in_port_identifier, bool capture_end_char, unsigned long timeout_seconds) {
@@ -74,7 +74,7 @@ std::string SatTerm_Agent::GetMessage(std::string const& in_port_identifier, boo
 }
 
 std::string SatTerm_Agent::SendMessage(std::string const& message, unsigned long timeout_seconds) {
-	return SendMessage(message, m_default_port.tx, timeout_seconds);
+	return SendMessage(message, m_default_port.out, timeout_seconds);
 }
 
 std::string SatTerm_Agent::SendMessage(std::string const& message, std::string const& out_port_identifier, unsigned long timeout_seconds) {
@@ -98,7 +98,7 @@ std::string SatTerm_Agent::SendMessage(std::string const& message, std::string c
 }
 
 size_t SatTerm_Agent::SendBytes(const char* bytes, size_t byte_count, unsigned long timeout_seconds) {
-	return SendBytes(bytes, byte_count, m_default_port.tx, timeout_seconds);
+	return SendBytes(bytes, byte_count, m_default_port.out, timeout_seconds);
 }
 
 size_t SatTerm_Agent::SendBytes(const char* bytes, size_t byte_count, std::string const& out_port_identifier, unsigned long timeout_seconds) {

@@ -38,8 +38,8 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 		out_port_identifiers = ParseFifoPaths(argv_start_index + 5, out_port_count, argv);
 		in_port_identifiers = ParseFifoPaths(argv_start_index + 5 + out_port_count, in_port_count, argv);
 
-		m_default_port.tx = out_port_identifiers[0];
-		m_default_port.rx = in_port_identifiers[0];
+		m_default_port.out = out_port_identifiers[0];
+		m_default_port.in = in_port_identifiers[0];
 		
 		if (m_display_messages) {
 			std::string message = "Client working path is " + m_working_path;
@@ -82,17 +82,17 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 }
 
 SatTerm_Client::~SatTerm_Client() {
-	// If shutdown is occurring, the server will poll m_default_port.rx until it gets EOF, then everything will be closed and unlinked at the
-	// server end. To make sure that unlink() deletes the files, we close any that are open here, saving m_default_port.tx at this end for last.
+	// If shutdown is occurring, the server will poll m_default_port.in until it gets EOF, then everything will be closed and unlinked at the
+	// server end. To make sure that unlink() deletes the files, we close any that are open here, saving m_default_port.out at this end for last.
 	for (const auto& port : m_in_ports) {
 		port.second->Close();
 	}
 	for (const auto& port : m_out_ports) {
-		if (port.first != m_default_port.tx) {
+		if (port.first != m_default_port.out) {
 			port.second->Close();
 		}
 	}
-	m_out_ports.at(m_default_port.tx)->Close();
+	m_out_ports.at(m_default_port.out)->Close();
 	// There should not be any more to do. Pointers in m_in_ports and m_out_ports are stored as unique_ptr<Port>, so when the maps
 	// are destroyed now the destructors for the Ports should be called automatically. In these the fifos will be unlink()ed if m_is_server is set.
 }

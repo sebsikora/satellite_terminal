@@ -34,23 +34,24 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	m_stop_message = stop_message;
 	
 	if (out_port_identifiers.size() == 0) {
-		out_port_identifiers.push_back("server_tx");
+		out_port_identifiers.push_back("server_out");
 	}
 	if (in_port_identifiers.size() == 0) {
-		in_port_identifiers.push_back("server_rx");
+		in_port_identifiers.push_back("server_in");
 	}
-	m_default_port.tx = out_port_identifiers[0];
-	m_default_port.rx = in_port_identifiers[0];
+	m_default_port.out = out_port_identifiers[0];
+	m_default_port.in = in_port_identifiers[0];
 	
 	if (stop_port_identifier == "") {
-		m_stop_port_identifier = m_default_port.tx;
+		m_stop_port_identifier = m_default_port.out;
 	}
 	
 	m_working_path = GetWorkingPath();
-	
+
+	bool success = true;
 	if (m_working_path != "") {
 		
-		bool success = CreatePorts(true, true, m_working_path, in_port_identifiers, m_display_messages, m_end_char, m_in_ports);
+		success = CreatePorts(true, true, m_working_path, in_port_identifiers, m_display_messages, m_end_char, m_in_ports);
 		if (success) {
 			success = CreatePorts(true, false, m_working_path, out_port_identifiers, m_display_messages, m_end_char, m_out_ports);
 		}
@@ -83,8 +84,10 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 				std::cerr << message << std::endl;
 			}
 		}
-		SetConnectedFlag(success);
+	} else {
+		success = false;
 	}
+	SetConnectedFlag(success);
 }
 
 SatTerm_Server::~SatTerm_Server() {
@@ -93,7 +96,7 @@ SatTerm_Server::~SatTerm_Server() {
 		if (m_display_messages) {
 			std::cerr << "Waiting for client process to terminate..." << std::endl;
 		}
-		// Poll for EOF on read on m_default_port.rx (tells us that client write end has closed).
+		// Poll for EOF on read on m_default_port.in (tells us that client write end has closed).
 		while(IsConnected()) {
 			GetMessage(false, 0);
 		}

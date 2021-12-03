@@ -57,7 +57,7 @@ class SatTerm_Server : public SatTerm_Agent {
 	public:
 		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true,
                        std::string const& path_to_terminal_emulator_paths = "./terminal_emulator_paths.txt",
-                       std::vector<std::string> out_port_identifiers = {"server_tx"}, std::vector<std::string> in_port_identifiers = {"server_rx"},
+                       std::vector<std::string> out_port_identifiers = {"server_out"}, std::vector<std::string> in_port_identifiers = {"server_in"},
                        char end_char = 3, std::string const& stop_port_identifier = "", std::string const& stop_message = "q");
 		~SatTerm_Server();
 		

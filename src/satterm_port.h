@@ -14,11 +14,11 @@
 #include <vector>                    // std::vector.
 
 struct default_port {
-	std::string tx;
-	std::string rx;
+	std::string out;
+	std::string in;
 	default_port& operator=(default_port const& rhs) {
-		tx = rhs.tx;
-		rx = rhs.rx;
+		out = rhs.out;
+		in = rhs.in;
 		return *this;
 	}
 };

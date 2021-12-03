@@ -10,17 +10,7 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 // -----------------------------------------------------------------------------------------------------
 
-#include <iostream>                   // std::cout, std::cerr, std::endl;
-#include <string>                     // std::string, std::to_string.
-#include <map>                        // std::map.
-#include <vector>                     // std::vector.
-#include <ctime>                      // time().
-
 #include <signal.h>                   // SIGPIPE, SIG_IGN.
-#include <stdio.h>                    // perror().
-#include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
-#include <unistd.h>                   // write(), read(), close(), unlink().
-#include <sys/stat.h>                 // mkfifo().
 
 #include "satterm_port.h"
 

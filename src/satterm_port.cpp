@@ -19,7 +19,6 @@
 #include <stdio.h>                    // perror().
 #include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
 #include <unistd.h>                   // write(), read(), close(), unlink().
-#include <sys/stat.h>                 // mkfifo().
 #include <errno.h>                    // errno.
 
 #include "satterm_port.h"

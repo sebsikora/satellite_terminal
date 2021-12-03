@@ -39,6 +39,7 @@ struct fifo_pair {
 struct error_descriptor {
 	int err_no;
 	std::string err_detail;
+	
 	error_descriptor& operator=(error_descriptor const& rhs) {
 		err_no = rhs.err_no;
 		err_detail = rhs.err_detail;

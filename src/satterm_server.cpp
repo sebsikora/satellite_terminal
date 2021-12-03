@@ -19,11 +19,12 @@
 
 #include <errno.h>                    // errno.
 #include <unistd.h>                   // fork(), execl(), getcwd().
+#include <stdio.h>                    // perror(), FILENAME_MAX.
 
 #include "satellite_terminal.h"
 
 SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages,
-							   std::vector<std::string> port_identifiers, std::string const& stop_message,
+                               std::vector<std::string> port_identifiers, std::string const& stop_message,
                                std::string const& path_to_terminal_emulator_paths, char end_char, std::string const& stop_port_identifier,
                                unsigned long timeout_seconds) {
 	

@@ -12,14 +12,9 @@
 
 #include <iostream>                   // std::cout, std::cerr, std::endl;
 #include <string>                     // std::string, std::to_string.
-#include <map>                        // std::map.
-#include <vector>                     // std::vector.
-#include <ctime>                      // time().
 
 #include <signal.h>                   // SIGPIPE, SIG_IGN.
 #include <stdio.h>                    // perror().
-#include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
-#include <unistd.h>                   // write(), read(), close(), unlink().
 #include <sys/stat.h>                 // mkfifo().
 
 #include "satterm_port.h"
@@ -43,7 +38,6 @@ Port_Server::Port_Server(std::string const& working_path, std::string const& ide
 Port_Server::~Port_Server() {
 	Close();
 	if (m_fifos.in.created) {
-		// Unlink.
 		std::string fifo_path = m_working_path + m_fifos.in.identifier;
 		int status = unlink(fifo_path.c_str());
 		if ((status < 0) && m_display_messages) {
@@ -52,7 +46,6 @@ Port_Server::~Port_Server() {
 		}
 	}
 	if (m_fifos.out.created) {
-		// Unlink.
 		std::string fifo_path = m_working_path + m_fifos.out.identifier;
 		int status = unlink(fifo_path.c_str());
 		if ((status < 0) && m_display_messages) {

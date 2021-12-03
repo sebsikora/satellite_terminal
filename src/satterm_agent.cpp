@@ -11,7 +11,6 @@
 // -----------------------------------------------------------------------------------------------------
 
 #include <iostream>                   // std::cout, std::cerr, std::endl.
-#include <fstream>                    // std::ifstream.
 #include <stdexcept>                  // std::out_of_range.
 #include <string>                     // std::string, std::to_string.
 #include <map>                        // std::map.

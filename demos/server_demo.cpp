@@ -7,7 +7,7 @@
 
 int main (void) {
 	
-	SatTerm_Server sts("test_server", "./client_demo");
+	SatTerm_Server sts("test_server", "./client_demo", true, {"com_1", "com_2"});
 	
 	if (sts.IsConnected()) {
 		size_t message_count = 10;
@@ -27,11 +27,11 @@ int main (void) {
 			usleep(1000);
 		}
 		
-		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().detail << std::endl;
+		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().err_detail << std::endl;
 		
 	} else {
 		
-		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().detail << std::endl;
+		std::cerr << "On termination error code = " << sts.GetErrorCode().err_no << "    Error detail = " << sts.GetErrorCode().err_detail << std::endl;
 		
 	}
 	return 0;

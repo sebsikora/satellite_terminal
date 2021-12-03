@@ -10,67 +10,53 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 // -----------------------------------------------------------------------------------------------------
 
-#include <iostream>
+#include <iostream>                   // std::cout, std::cerr, std::endl.
 #include <fstream>                    // std::ifstream.
-#include <stdexcept>
-#include <string>
-#include <map>
-#include <vector>
-#include <memory>
+#include <string>                     // std::string, std::to_string.
+#include <map>                        // std::map.
+#include <vector>                     // std::vector.
+#include <memory>                     // std::unique_ptr.
 
 #include <errno.h>                    // errno.
 #include <unistd.h>                   // fork(), execl(), getcwd().
 
 #include "satellite_terminal.h"
 
-SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages, 
-                               std::string const& path_to_terminal_emulator_paths, std::vector<std::string> out_port_identifiers,
-                               std::vector<std::string> in_port_identifiers, char end_char, std::string const& stop_port_identifier,
-                               std::string const& stop_message) {
+SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages,
+							   std::vector<std::string> port_identifiers, std::string const& stop_message,
+                               std::string const& path_to_terminal_emulator_paths, char end_char, std::string const& stop_port_identifier,
+                               unsigned long timeout_seconds) {
 	
 	m_identifier = identifier;
 	m_display_messages = display_messages;
 	m_end_char = end_char;
 	m_stop_message = stop_message;
 	
-	if (out_port_identifiers.size() == 0) {
-		out_port_identifiers.push_back("server_out");
+	if (port_identifiers.size() == 0) {
+		port_identifiers.push_back("comms");
 	}
-	if (in_port_identifiers.size() == 0) {
-		in_port_identifiers.push_back("server_in");
-	}
-	m_default_port.out = out_port_identifiers[0];
-	m_default_port.in = in_port_identifiers[0];
+	m_default_port_identifier = port_identifiers[0];
 	
 	if (stop_port_identifier == "") {
-		m_stop_port_identifier = m_default_port.out;
+		m_stop_port_identifier = m_default_port_identifier;
 	}
 	
 	m_working_path = GetWorkingPath();
-
+	
 	bool success = true;
 	if (m_working_path != "") {
 		
-		success = CreatePorts(true, true, m_working_path, in_port_identifiers, m_display_messages, m_end_char, m_in_ports);
-		if (success) {
-			success = CreatePorts(true, false, m_working_path, out_port_identifiers, m_display_messages, m_end_char, m_out_ports);
-		}
+		success = CreateServerPorts(m_working_path, port_identifiers, m_display_messages, m_end_char, m_ports);
 		
 		if (success) {
-			pid_t client_pid = StartClient(path_to_terminal_emulator_paths, path_to_client_binary, m_working_path, m_end_char, m_stop_message,
-			                               in_port_identifiers, out_port_identifiers);
+			pid_t client_pid = StartClient(path_to_terminal_emulator_paths, path_to_client_binary, m_working_path, m_end_char, m_stop_message, port_identifiers);
 			if (client_pid < 0) {
 				success = false;
 			}
 		}
 		
-		unsigned long timeout_seconds = 5;
 		if (success) {
-			success = OpenPorts(m_in_ports, timeout_seconds);
-		}
-		
-		if (success) {
-			success = OpenPorts(m_out_ports, timeout_seconds);
+			success = OpenPorts(m_ports, timeout_seconds);
 		}
 		
 		if (success) {
@@ -96,7 +82,7 @@ SatTerm_Server::~SatTerm_Server() {
 		if (m_display_messages) {
 			std::cerr << "Waiting for client process to terminate..." << std::endl;
 		}
-		// Poll for EOF on read on m_default_port.in (tells us that client write end has closed).
+		// Poll for EOF on read on m_default_port_identifier (tells us that client write end has closed).
 		while(IsConnected()) {
 			GetMessage(false, 0);
 		}
@@ -113,7 +99,7 @@ std::string SatTerm_Server::GetWorkingPath(void) {
 	if (retval == NULL) {
 		m_error_code = {errno, "getcwd()"};
 		if (m_display_messages) {
-			perror("getcwd() unable to obtain current working path.");
+			perror("getcwd() unable to obtain current working path");
 		}
 		return "";
 	} else {
@@ -128,8 +114,22 @@ std::string SatTerm_Server::GetWorkingPath(void) {
 	}
 }
 
+bool SatTerm_Server::CreateServerPorts(std::string const& working_path, std::vector<std::string> port_identifiers,
+                                       bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports) {
+	bool success = true;
+	for (auto const& port_identifier : port_identifiers) {
+		ports.emplace(port_identifier, std::make_unique<Port_Server>(working_path, port_identifier, display_messages, end_char));
+		if (!(static_cast<Port_Server*>(ports.at(port_identifier).get())->IsCreated())) {
+			success = false;
+			m_error_code = ports.at(port_identifier)->GetErrorCode();
+			break;
+		}
+	}
+	return success;
+}
+
 pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths, std::string const& path_to_client_binary, std::string const& working_path,
-                                  char end_char, std::string const& stop_message, std::vector<std::string> in_port_identifiers, std::vector<std::string> out_port_identifiers) {
+                                  char end_char, std::string const& stop_message, std::vector<std::string> port_identifiers) {
 	m_error_code = {0, ""};
 	
 	std::vector<std::string> terminal_emulator_paths = LoadTerminalEmulatorPaths(path_to_terminal_emulator_paths);
@@ -141,7 +141,7 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 			// Info on possible fork() errors - https://pubs.opengroup.org/onlinepubs/009696799/functions/fork.html
 			m_error_code = {errno, "fork()"};
 			if (m_display_messages) {
-				perror("fork() to client process failed.");
+				perror("fork() to client process failed");
 			}
 			return process;
 		}
@@ -157,13 +157,9 @@ pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_p
 			arg_string += " " + working_path;
 			arg_string += " " + std::to_string((int)(end_char));
 			arg_string += " " + stop_message;
-			arg_string += " " + std::to_string(in_port_identifiers.size());
-			arg_string += " " + std::to_string(out_port_identifiers.size());
+			arg_string += " " + std::to_string(port_identifiers.size());
 			
-			for (const auto& identifier : in_port_identifiers) {
-				arg_string += " " + identifier;
-			}
-			for (const auto& identifier : out_port_identifiers) {
+			for (const auto& identifier : port_identifiers) {
 				arg_string += " " + identifier;
 			}
 			

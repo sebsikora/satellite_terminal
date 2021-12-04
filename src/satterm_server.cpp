@@ -120,7 +120,9 @@ bool SatTerm_Server::CreateServerPorts(std::string const& working_path, std::vec
 	bool success = true;
 	for (auto const& port_identifier : port_identifiers) {
 		ports.emplace(port_identifier, std::make_unique<Port_Server>(working_path, port_identifier, display_messages, end_char));
-		if (!(static_cast<Port_Server*>(ports.at(port_identifier).get())->IsCreated())) {
+		Port* port_pointer = ports.at(port_identifier).get();
+		Port_Server* port_server_pointer = static_cast<Port_Server*>(port_pointer);
+		if (!(port_server_pointer->IsCreated())) {
 			success = false;
 			m_error_code = ports.at(port_identifier)->GetErrorCode();
 			break;

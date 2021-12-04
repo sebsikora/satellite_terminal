@@ -74,30 +74,36 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 SatTerm_Client::~SatTerm_Client() {
 	// If shutdown is occurring, the server will poll m_default_port.in until it gets EOF, then everything will be closed and unlinked at the
 	// server end. To make sure that unlink() deletes the files, we close any that are open here, saving m_default_port.out at this end for last.
-	for (const auto& port : m_ports) {
-		if (port.first != m_default_port_identifier) {
-			port.second->Close();
+	if (IsConnected()) {
+		for (const auto& port : m_ports) {
+			if (port.first != m_default_port_identifier) {
+				port.second->Close();
+			}
 		}
+		m_ports.at(m_default_port_identifier)->Close();
 	}
-	m_ports.at(m_default_port_identifier)->Close();
 	// There should not be any more to do. Pointers in m_in_ports and m_out_ports are stored as unique_ptr<Port>, so when the maps
 	// are destroyed now the destructors for the Ports should be called automatically. In these the fifos will be unlink()ed if m_is_server is set.
 }
 
 size_t SatTerm_Client::GetArgStartIndex(std::string const& arg_start_delimiter, int argc, char* argv[]) {
+	bool success = true;
 	size_t argument_index = 1;
-	bool failed = false;
-	while (std::string(argv[argument_index]) != arg_start_delimiter) {
-		argument_index ++;
-		if (argument_index == (size_t)(argc)) {
-			failed = true;
-			break;
+	if (argc > 1) {
+		while (std::string(argv[argument_index]) != arg_start_delimiter) {
+			argument_index ++;
+			if (argument_index == (size_t)(argc)) {
+				success = false;
+				break;
+			}
 		}
-	}
-	if (failed) {
-		return 0;
 	} else {
+		success = false;
+	}
+	if (success) {
 		return argument_index + 1;
+	} else {
+		return 0;
 	}
 }
 

@@ -16,6 +16,8 @@
 #include <signal.h>                   // SIGPIPE, SIG_IGN.
 #include <stdio.h>                    // perror().
 #include <sys/stat.h>                 // mkfifo().
+#include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
+#include <unistd.h>                   // write(), read(), close(), unlink().
 
 #include "satterm_port.h"
 

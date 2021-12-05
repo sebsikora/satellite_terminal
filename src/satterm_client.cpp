@@ -28,7 +28,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 
 	bool success = false;
 	if (argv_start_index != 0) {
-		success = true;
+		
 		m_working_path = std::string(argv[argv_start_index]);
 		m_end_char = (char)(std::stoi(std::string(argv[argv_start_index + 1])));
 		m_stop_message = std::string(argv[argv_start_index + 2]);
@@ -42,13 +42,7 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 			std::cerr << message << std::endl;
 		}
 		
-		CreateClientPorts(m_working_path, port_identifiers, m_display_messages, m_end_char, m_ports);
-		
-		unsigned long timeout_seconds = 5;
-		
-		if (success) {
-			success = OpenPorts(m_ports, timeout_seconds);
-		}
+		success = CreatePorts(false, m_working_path, port_identifiers, m_display_messages, m_end_char, m_ports);
 		
 		if (success) {
 			if (m_display_messages) {
@@ -72,18 +66,9 @@ SatTerm_Client::SatTerm_Client(std::string const& identifier, int argc, char* ar
 }
 
 SatTerm_Client::~SatTerm_Client() {
-	// If shutdown is occurring, the server will poll m_default_port.in until it gets EOF, then everything will be closed and unlinked at the
-	// server end. To make sure that unlink() deletes the files, we close any that are open here, saving m_default_port.out at this end for last.
 	if (IsConnected()) {
-		for (const auto& port : m_ports) {
-			if (port.first != m_default_port_identifier) {
-				port.second->Close();
-			}
-		}
-		m_ports.at(m_default_port_identifier)->Close();
+		SendMessage(m_stop_message, m_stop_port_identifier);
 	}
-	// There should not be any more to do. Pointers in m_in_ports and m_out_ports are stored as unique_ptr<Port>, so when the maps
-	// are destroyed now the destructors for the Ports should be called automatically. In these the fifos will be unlink()ed if m_is_server is set.
 }
 
 size_t SatTerm_Client::GetArgStartIndex(std::string const& arg_start_delimiter, int argc, char* argv[]) {
@@ -114,11 +99,4 @@ std::vector<std::string> SatTerm_Client::ParseFifoPaths(size_t argv_start_index,
 		paths_container.emplace_back(std::string(argv[i]));
 	}
 	return paths_container;
-}
-
-void SatTerm_Client::CreateClientPorts(std::string const& working_path, std::vector<std::string> port_identifiers,
-                                       bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports) {
-	for (auto const& port_identifier : port_identifiers) {
-		ports.emplace(port_identifier, std::make_unique<Port_Client>(working_path, port_identifier, display_messages, end_char));
-	}
 }

@@ -20,7 +20,7 @@
 class SatTerm_Agent {
 	public:
 		SatTerm_Agent() {}
-		virtual ~SatTerm_Agent() {}
+		virtual ~SatTerm_Agent();
 		
 		std::string GetMessage(bool capture_end_char = false, unsigned long timeout_seconds = 0);
 		std::string GetMessage(std::string const& port_identifier, bool capture_end_char = false, unsigned long timeout_seconds = 0);
@@ -36,8 +36,8 @@ class SatTerm_Agent {
 		void SetConnectedFlag(bool is_connected);
 		
 	protected:
-		bool OpenPorts(std::map<std::string, std::unique_ptr<Port>>& ports, unsigned long timeout_seconds = 5);
-		
+		bool CreatePorts(bool is_server, std::string const& working_path, std::vector<std::string> port_identifiers,
+		                 bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports);
 		error_descriptor m_error_code = {0, ""};
 		bool m_display_messages = false;
 		std::map<std::string, std::unique_ptr<Port>> m_ports = {};
@@ -60,8 +60,6 @@ class SatTerm_Server : public SatTerm_Agent {
 	
 	private:
 		std::string GetWorkingPath(void);
-		bool CreateServerPorts(std::string const& working_path, std::vector<std::string> port_identifiers,
-		                       bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports);
 		std::vector<std::string> LoadTerminalEmulatorPaths(std::string const& file_path);
 		pid_t StartClient(std::string const& path_to_terminal_emulator_paths, std::string const& path_to_client_binary, std::string const& working_path,
                           char end_char, std::string const& stop_message, std::vector<std::string> port_identifiers);
@@ -75,6 +73,5 @@ class SatTerm_Client : public SatTerm_Agent {
 	private:
 		size_t GetArgStartIndex(std::string const& arg_start_delimiter, int argc, char* argv[]);
 		std::vector<std::string> ParseFifoPaths(size_t argv_start_index, size_t argv_count, char* argv[]);
-		void CreateClientPorts(std::string const& working_path, std::vector<std::string> port_identifiers,
-		                       bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports);
+		
 };

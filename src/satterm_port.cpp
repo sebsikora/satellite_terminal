@@ -17,11 +17,102 @@
 #include <ctime>                      // time().
 
 #include <stdio.h>                    // perror().
+#include <sys/stat.h>                 // open() and O_RDONLY, O_WRONLY, etc.
 #include <fcntl.h>                    // open() and O_RDONLY, O_WRONLY, etc.
 #include <unistd.h>                   // write(), read(), close(), unlink().
 #include <errno.h>                    // errno.
+#include <signal.h>                   // SIGPIPE, SIG_IGN.
+
 
 #include "satterm_port.h"
+
+Port::Port(bool is_server, std::string const& working_path, std::string const& identifier, bool display_messages, char end_char) {
+	m_working_path = working_path;
+	m_identifier = identifier;
+	
+	m_display_messages = display_messages;
+	m_end_char = end_char;
+	if (is_server) {
+		m_fifos.in.identifier = identifier + "_sin";
+		m_fifos.out.identifier = identifier + "_sout";
+	} else {
+		m_fifos.in.identifier = identifier + "_sout";
+		m_fifos.out.identifier = identifier + "_sin";
+	}
+	
+	signal(SIGPIPE, SIG_IGN);
+	
+	m_fifos.in.created = CreateFifo(m_working_path + m_fifos.in.identifier);
+	
+	OpenFifos(is_server, 5);
+}
+
+Port::~Port() {
+	CloseFifos();
+	UnlinkInFifo();
+}
+
+bool Port::OpenFifos(bool is_server, unsigned long timeout_seconds) {
+	if (is_server) {
+		m_fifos.in.opened = OpenRxFifo(m_working_path + m_fifos.in.identifier, timeout_seconds);
+		if (m_fifos.in.opened) {
+			m_fifos.out.opened = OpenTxFifo(m_working_path + m_fifos.out.identifier, timeout_seconds);
+		}
+	} else {
+		m_fifos.out.opened = OpenTxFifo(m_working_path + m_fifos.out.identifier, timeout_seconds);
+		if (m_fifos.out.opened) {
+			m_fifos.in.opened = OpenRxFifo(m_working_path + m_fifos.in.identifier, timeout_seconds);
+		}
+	}
+	return (m_fifos.in.opened && m_fifos.out.opened);
+}
+
+void Port::CloseFifos(void) {
+	if (m_fifos.out.opened) {
+		m_fifos.out.opened = false;
+		close(m_fifos.out.descriptor);
+	}
+	if (m_fifos.in.opened) {
+		while (m_fifos.in.opened) {
+			usleep(10);
+			GetMessage(false, 0);
+		}
+		close(m_fifos.in.descriptor);
+	}
+}
+
+void Port::UnlinkInFifo(void) {
+	if (m_fifos.in.created) {
+		std::string fifo_path = m_working_path + m_fifos.in.identifier;
+		int status = unlink(fifo_path.c_str());
+		if ((status < 0) && m_display_messages) {
+			std::string error_message = "Unable to unlink() fifo at " + fifo_path;
+			perror(error_message.c_str());
+		}
+	}
+}
+
+bool Port::CreateFifo(std::string const& fifo_path) {
+	m_error_code = {0, ""};
+	bool success = false;
+	
+	remove(fifo_path.c_str());	// If temporary file already exists, delete it.
+	
+	int status = mkfifo(fifo_path.c_str(), S_IFIFO|0666);
+
+	if (status < 0) {
+		// Info on possible errors for mkfifo() - https://pubs.opengroup.org/onlinepubs/009696799/functions/mkfifo.html
+		m_error_code = {errno, "mkfifo()"};
+		if (m_display_messages) {
+			std::string error_message = "mkfifo() error trying to create fifo " + fifo_path;
+			perror(error_message.c_str());
+		}
+		success = false;
+	} else {
+		success = true;
+	}
+	return success;
+}
 
 bool Port::OpenRxFifo(std::string const& fifo_path, unsigned long timeout_seconds) {
 	m_error_code = {0, ""};
@@ -110,6 +201,12 @@ int Port::PollToOpenTxFifo(std::string const& fifo_path, unsigned long timeout_s
 					finished = ((time(0) - start_time) > timeout_seconds);
 					if (finished) {
 						m_error_code = {-1, "PollToOpenTxFifo()_rx_conn_timeout"};
+					}
+					break;
+				case ENOENT:
+					finished = ((time(0) - start_time) > timeout_seconds);
+					if (finished) {
+						m_error_code = {-1, "PollToOpenTxFifo()_no_tx_fifo_timeout"};
 					}
 					break;
 				default:

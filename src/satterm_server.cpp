@@ -47,8 +47,6 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 	bool success = true;
 	if (m_working_path != "") {
 		
-		success = CreateServerPorts(m_working_path, port_identifiers, m_display_messages, m_end_char, m_ports);
-		
 		if (success) {
 			pid_t client_pid = StartClient(path_to_terminal_emulator_paths, path_to_client_binary, m_working_path, m_end_char, m_stop_message, port_identifiers);
 			if (client_pid < 0) {
@@ -57,7 +55,7 @@ SatTerm_Server::SatTerm_Server(std::string const& identifier, std::string const&
 		}
 		
 		if (success) {
-			success = OpenPorts(m_ports, timeout_seconds);
+			success = CreatePorts(true, m_working_path, port_identifiers, m_display_messages, m_end_char, m_ports);
 		}
 		
 		if (success) {
@@ -83,13 +81,15 @@ SatTerm_Server::~SatTerm_Server() {
 		if (m_display_messages) {
 			std::cerr << "Waiting for client process to terminate..." << std::endl;
 		}
-		// Poll for EOF on read on m_default_port_identifier (tells us that client write end has closed).
-		while(IsConnected()) {
-			GetMessage(false, 0);
+		
+		unsigned long start_time = time(0);
+		while(IsConnected() && ((time(0) - start_time) < 5)) {
+			std::string shutdown_confirmation = GetMessage(m_stop_port_identifier, false, 0);
+			if (shutdown_confirmation == m_stop_message) {
+				break;
+			}
 		}
 	}
-	// There should not be any more to do. Pointers in m_in_ports and m_out_ports are stored as unique_ptr<Port>, so when the maps
-	// are destroyed now the destructors for the Ports should be called automatically. In these the fifos will be unlink()ed if m_is_server is set.
 }
 
 std::string SatTerm_Server::GetWorkingPath(void) {
@@ -113,22 +113,6 @@ std::string SatTerm_Server::GetWorkingPath(void) {
 		}
 		return working_path_string;
 	}
-}
-
-bool SatTerm_Server::CreateServerPorts(std::string const& working_path, std::vector<std::string> port_identifiers,
-                                       bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports) {
-	bool success = true;
-	for (auto const& port_identifier : port_identifiers) {
-		ports.emplace(port_identifier, std::make_unique<Port_Server>(working_path, port_identifier, display_messages, end_char));
-		Port* port_pointer = ports.at(port_identifier).get();
-		Port_Server* port_server_pointer = static_cast<Port_Server*>(port_pointer);
-		if (!(port_server_pointer->IsCreated())) {
-			success = false;
-			m_error_code = ports.at(port_identifier)->GetErrorCode();
-			break;
-		}
-	}
-	return success;
 }
 
 pid_t SatTerm_Server::StartClient(std::string const& path_to_terminal_emulator_paths, std::string const& path_to_client_binary, std::string const& working_path,

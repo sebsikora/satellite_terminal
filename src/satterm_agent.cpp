@@ -19,12 +19,24 @@
 
 #include "satellite_terminal.h"
 
-bool SatTerm_Agent::OpenPorts(std::map<std::string, std::unique_ptr<Port>>& ports, unsigned long timeout_seconds) {
+SatTerm_Agent::~SatTerm_Agent() {
+	// NOTE - STL containers apart from std::array make no guarantees about order of element destruction.
+	//
+	// If we want to destroy all the Ports 'in order' at each end, we need to force the issue rather than relying on the automatic behaviour.
+	std::map<std::string, std::unique_ptr<Port>>::iterator itr = m_ports.begin();
+	while (itr != m_ports.end()) {
+		itr = m_ports.erase(itr);
+	}
+}
+
+bool SatTerm_Agent::CreatePorts(bool is_server, std::string const& working_path, std::vector<std::string> port_identifiers,
+                                bool display_messages, char end_char, std::map<std::string, std::unique_ptr<Port>>& ports) {
 	bool success = true;
-	for (auto const& current_port : ports) {
-		if (!(current_port.second->Open(timeout_seconds))) {
+	for (auto const& port_identifier : port_identifiers) {
+		ports.emplace(port_identifier, std::make_unique<Port>(is_server, working_path, port_identifier, display_messages, end_char));
+		if (!(ports.at(port_identifier).get()->IsOpened())) {
 			success = false;
-			m_error_code = current_port.second->GetErrorCode();
+			m_error_code = ports.at(port_identifier)->GetErrorCode();
 			break;
 		}
 	}

@@ -54,16 +54,16 @@ class SatTerm_Agent {
 class SatTerm_Server : public SatTerm_Agent {
 	public:
 		SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true,
-                       std::vector<std::string> port_identifiers = {"comms"}, std::string const& stop_message = "q",
-                       std::string const& path_to_terminal_emulator_paths = "./terminal_emulator_paths.txt",
-                       char end_char = 3, std::string const& stop_port_identifier = "", unsigned long timeout_seconds = 5);
+		               std::vector<std::string> port_identifiers = {"comms"}, std::string const& stop_message = "q",
+		               std::string const& path_to_terminal_emulator_paths = "./terminal_emulator_paths.txt",
+		               char end_char = 3, std::string const& stop_port_identifier = "", unsigned long timeout_seconds = 5);
 		~SatTerm_Server();
 	
 	private:
 		std::string GetWorkingPath(void);
 		std::vector<std::string> LoadTerminalEmulatorPaths(std::string const& file_path);
 		pid_t StartClient(std::string const& path_to_terminal_emulator_paths, std::string const& path_to_client_binary, std::string const& working_path,
-                          char end_char, std::string const& stop_message, std::vector<std::string> port_identifiers);
+		                  char end_char, std::string const& stop_message, std::vector<std::string> port_identifiers);
 };
 
 class SatTerm_Client : public SatTerm_Agent {

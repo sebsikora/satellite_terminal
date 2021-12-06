@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 			usleep(1000);
 		}
 		std::cerr << "On termination error code = " << stc.GetErrorCode().err_no << "    Error detail = " << stc.GetErrorCode().err_detail << std::endl;
-		sleep(5);        // Delay to read the message before terminal emulator window closes.
+		sleep(20);        // Delay to read the message before terminal emulator window closes.
 	} else {
 		std::cerr << "On termination error code = " << stc.GetErrorCode().err_no << "    Error detail = " << stc.GetErrorCode().err_detail << std::endl;
 		sleep(5);        // Delay to read the message before terminal emulator window closes.

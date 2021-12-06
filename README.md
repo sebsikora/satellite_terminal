@@ -13,13 +13,13 @@
 A simple C++ library for POSIX compatible operating systems that enables your project to easily launch and communicate bidirectionally with client processes connected to separate terminal emulator instances.
 <br />
 
-Updated 30/11/2021.
+Updated 06/12/2021.
 <br />
 <br />
 
 ## What is it?
 
-satellite_terminal automates the process of launching a client process connected to it's own terminal emulator instance from within a parent process, linked with an arbitrary number of [named pipes](https://en.wikipedia.org/wiki/Named_pipe) to allow bidirectional interprocess communication.
+satellite_terminal automates the process of launching a client process connected to it's own terminal emulator instance from within a parent process, linked with an arbitrary number of [named pipes](https://en.wikipedia.org/wiki/Named_pipe)(otherwise known as FIFOs) to allow bidirectional interprocess communication.
 
 satellite_terminal leverages the functionality defined in the [unistd.h](https://en.wikipedia.org/wiki/Unistd.h), [sys/stat.h](https://en.wikibooks.org/wiki/C_Programming/POSIX_Reference/sys/stat.h) & [fcntl.h](https://pubs.opengroup.org/onlinepubs/007904875/basedefs/fcntl.h.html) headers, and as-such will work only with [POSIX compatible](https://en.wikipedia.org/wiki/POSIX) operating systems and [environments](https://www.cygwin.com/). satellite_terminal has to-date been compiled and tested on GNU/Linux.
 
@@ -35,9 +35,9 @@ Using satellite_terminal in a C++ project is very easy. Let's demonstrate this v
 
 ### Parent process
 
-The parent process spawns the child process by instantiating a SatTerm_Server. The server constructor is passed an identifier string and the path to the child process binary as arguments.
+In the parent process, we spawn the child process by instantiating a `SatTerm_Server`. At a minimum, we pass the server constructor an identifier string and a string comprising the path to the child process binary as arguments. We can set the third (optional) boolean argument to `false` to hide console information and error messages for both parent and child process.
 
-By default two named pipes will be created to form a tx-rx pair, but an arbitrary of tx and rx named pipes can be created if desired.
+The fourth (optional) argument is a vector of `Port` identifiers. By default a single send-receive pair of FIFOs will be created, accessed via a single corresponding `Port` ("comms") instantiated by each of the `SatTerm_Server` and `SatTerm_Client`. If desired we can specify an arbitrary number of additional `Port` identifiers here.
 <br />
 
 ```cpp
@@ -48,13 +48,14 @@ By default two named pipes will be created to form a tx-rx pair, but an arbitrar
 // Server constructor prototype in satellite_terminal.h:
 //
 // SatTerm_Server(std::string const& identifier, std::string const& path_to_client_binary, bool display_messages = true,
-//                std::string const& terminal_emulator_paths = "./terminal_emulator_paths.txt", size_t stop_fifo_index = 0,
-//                size_t sc_fifo_count = 1, size_t cs_fifo_count = 1, char end_char = 3, std::string const& stop_message = "q");
-//
+//                std::vector<std::string> port_identifiers = {"comms"}, std::string const& stop_message = "q",
+//                std::string const& path_to_terminal_emulator_paths = "./terminal_emulator_paths.txt",
+//                char end_char = 3, std::string const& stop_port_identifier = "", unsigned long timeout_seconds = 5);
+
 SatTerm_Server sts("test_server", "./child_binary");
 
 // Path to child binary above can incorporate desired command-line arguments
-// eg: "./client_demo --full-screen=true"
+// eg: "./child_binary --full-screen=true"
 
 if (sts.IsConnected()) {
 	// We are good to go!
@@ -64,17 +65,17 @@ if (sts.IsConnected()) {
 ```
 <br />
 
-The server constructor will create the named pipe temporary files in the working directory and then spawn a terminal emulator (from the list in `terminal_emulator_paths.txt`) via-which it will directly execute the child binary via the '-e' option. The paths to the named pipes and all other required parameters are automatically passed to the child process as command-line options.
+The server constructor will spawn a terminal emulator (from the list in `terminal_emulator_paths.txt`) via-which it will directly execute the child binary using the ['-e' option](https://www.mankier.com/1/xterm#-e), passing the required configuration options for the child process via automatically generated command-line options.
 
-The server constructor will return once the communication channel is established with the child process, an error occurs or a timeout is reached. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the bi-directional communication channel was established without error.
+The server constructor will return once the communication channel is established with the child process, an error occurs or a timeout is reached. When it returns, if the server's `IsConnected()` member function returns `true`, the child process started correctly and the required FIFOs were created and opened for reading/writing without error.
 <br />
 <br />
 
 ### Child process
 
-Client parameters are passed to the child process via it's command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
+In the child process, we establish communication with the parent process by instantiating a SatTerm_Client. The client parameters are passed to the child process via command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
 
-The parameters are appended directly onto the child binary path string passed to the server constructor following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and the client constructor will automatically parse the remaining arguments.
+The parameters are appended directly onto the child binary path string passed to the server constructor, following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and the client constructor will automatically parse the remaining arguments.
 <br />
 
 ```cpp
@@ -102,7 +103,7 @@ The client constructor will return once the communication channel is established
 
 ### Sending and receiving
 
-Blah...
+Once the SatTerm_Server constructor in our parent process and SatTerm_Client constructor in our spawned child process have returned we can exchange data.
 <br />
 
 ```cpp

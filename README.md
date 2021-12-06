@@ -73,7 +73,7 @@ The server constructor will return once the communication channel is established
 
 ### Child process
 
-In the child process, we establish communication with the parent process by instantiating a SatTerm_Client. The client parameters are passed to the child process via command-line arguments, therefore argc and argv must be passed to the SatTerm_Client constructor.
+In the child process, we establish communication with the parent process by instantiating a `SatTerm_Client`. The client parameters are passed to the child process via command-line arguments, therefore argc and argv must be passed to the constructor.
 
 The parameters are appended directly onto the child binary path string passed to the server constructor, following an automatically applied delimiter ("client_args"), so you can use any command-line arguments required by the child process as normal and the client constructor will automatically parse the remaining arguments.
 <br />
@@ -103,7 +103,9 @@ The client constructor will return once the communication channel is established
 
 ### Sending and receiving
 
-Once the SatTerm_Server constructor in our parent process and SatTerm_Client constructor in our spawned child process have returned we can exchange data.
+Once the `SatTerm_Server` constructor in our parent process and `SatTerm_Client` constructor in our spawned child process have returned our two processes can exchange messages.
+
+
 <br />
 
 ```cpp

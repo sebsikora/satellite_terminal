@@ -32,6 +32,7 @@ class SatTerm_Agent {
 		error_descriptor GetErrorCode(void);
 		std::string GetStopPortIdentifier(void);
 		std::string GetStopMessage(void);
+		std::vector<std::string> GetPortIdentifiers(void);
 		bool IsConnected(void);
 		void SetConnectedFlag(bool is_connected);
 		

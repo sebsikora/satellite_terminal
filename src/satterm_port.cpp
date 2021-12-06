@@ -32,6 +32,7 @@ Port::Port(bool is_server, std::string const& working_path, std::string const& i
 	
 	m_display_messages = display_messages;
 	m_end_char = end_char;
+	
 	if (is_server) {
 		m_fifos.in.identifier = identifier + "_sin";
 		m_fifos.out.identifier = identifier + "_sout";
@@ -50,21 +51,6 @@ Port::Port(bool is_server, std::string const& working_path, std::string const& i
 Port::~Port() {
 	CloseFifos();
 	UnlinkInFifo();
-}
-
-bool Port::OpenFifos(bool is_server, unsigned long timeout_seconds) {
-	if (is_server) {
-		m_fifos.in.opened = OpenRxFifo(m_working_path + m_fifos.in.identifier, timeout_seconds);
-		if (m_fifos.in.opened) {
-			m_fifos.out.opened = OpenTxFifo(m_working_path + m_fifos.out.identifier, timeout_seconds);
-		}
-	} else {
-		m_fifos.out.opened = OpenTxFifo(m_working_path + m_fifos.out.identifier, timeout_seconds);
-		if (m_fifos.out.opened) {
-			m_fifos.in.opened = OpenRxFifo(m_working_path + m_fifos.in.identifier, timeout_seconds);
-		}
-	}
-	return (m_fifos.in.opened && m_fifos.out.opened);
 }
 
 void Port::CloseFifos(void) {
@@ -112,6 +98,21 @@ bool Port::CreateFifo(std::string const& fifo_path) {
 		success = true;
 	}
 	return success;
+}
+
+bool Port::OpenFifos(bool is_server, unsigned long timeout_seconds) {
+	if (is_server) {
+		m_fifos.in.opened = OpenRxFifo(m_working_path + m_fifos.in.identifier, timeout_seconds);
+		if (m_fifos.in.opened) {
+			m_fifos.out.opened = OpenTxFifo(m_working_path + m_fifos.out.identifier, timeout_seconds);
+		}
+	} else {
+		m_fifos.out.opened = OpenTxFifo(m_working_path + m_fifos.out.identifier, timeout_seconds);
+		if (m_fifos.out.opened) {
+			m_fifos.in.opened = OpenRxFifo(m_working_path + m_fifos.in.identifier, timeout_seconds);
+		}
+	}
+	return (m_fifos.in.opened && m_fifos.out.opened);
 }
 
 bool Port::OpenRxFifo(std::string const& fifo_path, unsigned long timeout_seconds) {
@@ -322,7 +323,7 @@ std::string Port::GetMessage(bool capture_end_char, unsigned long timeout_second
 				} else {                                                     // If the Component is initialised, the partner component no-longer has the
 					m_error_code = {-1, "read()_EOF"};                       // fifo open for writing (has become disconnected).
 					if (m_display_messages) {
-						std::string error_message = "EOF error on GetMessage() for Port " + m_identifier + " suggests counterpart terminated.";
+						std::string error_message = "EOF on GetMessage() for Port " + m_identifier + " suggests counterpart terminated.";
 						std::cerr << error_message << std::endl;
 					}
 					m_fifos.in.opened = false;

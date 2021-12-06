@@ -83,7 +83,8 @@ SatTerm_Server::~SatTerm_Server() {
 		}
 		
 		unsigned long start_time = time(0);
-		while(IsConnected() && ((time(0) - start_time) < 5)) {
+		unsigned long shutdown_confirmation_timeout = 5;
+		while(IsConnected() && ((time(0) - start_time) < shutdown_confirmation_timeout)) {
 			std::string shutdown_confirmation = GetMessage(m_stop_port_identifier, false, 0);
 			if (shutdown_confirmation == m_stop_message) {
 				break;

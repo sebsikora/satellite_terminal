@@ -127,6 +127,14 @@ std::string SatTerm_Agent::GetStopMessage(void) {
 	return m_stop_message;
 }
 
+std::vector<std::string> SatTerm_Agent::GetPortIdentifiers(void) {
+	std::vector<std::string> port_identifiers = {};
+	for (const auto& port : m_ports) {
+		port_identifiers.push_back(port.first);
+	}
+	return port_identifiers;
+}
+
 bool SatTerm_Agent::IsConnected(void) {
 	return m_connected;
 }

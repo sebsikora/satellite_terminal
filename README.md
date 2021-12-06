@@ -1,6 +1,9 @@
 # satellite_terminal
 <br />
 
+![Parent and Child process terminal emulator instances](screenshot.png)
+<br />
+
 © 2021 Dr Sebastien Sikora.
 
 [seb.nf.sikora@protonmail.com](mailto:seb.nf.sikora@protonmail.com)
@@ -26,7 +29,7 @@ satellite_terminal is easy to incorporate and use within your own projects, as t
 
 ## How to use it?
 
-Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a trivial example.
+Using satellite_terminal in a C++ project is very easy. Let's demonstrate this via a simple example.
 <br />
 <br />
 
